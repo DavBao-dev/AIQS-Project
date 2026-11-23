@@ -1,64 +1,602 @@
 /* Reading workspace, personal shelves and a source-attributed news desk. */
-Object.assign(icons,{
-  book:'<path d="M12 5C9 3 5 3 2 4v16c4-1 7 0 10 2 3-2 6-3 10-2V4c-3-1-7-1-10 1zm0 0v17"/>',
-  check:'<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',
-  grid:'<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
-  list:'<path d="M8 5h13M8 12h13M8 19h13M3 5h.1M3 12h.1M3 19h.1"/>',
-  refresh:'<path d="M20 7A9 9 0 1 0 21 14M20 2v6h-6"/>',
-  pen:'<path d="m15 3 6 6L9 21H3v-6zM12 6l6 6"/>'
+Object.assign(icons, {
+  book: '<path d="M12 5C9 3 5 3 2 4v16c4-1 7 0 10 2 3-2 6-3 10-2V4c-3-1-7-1-10 1zm0 0v17"/>',
+  check: '<circle cx="12" cy="12" r="9"/><path d="m7 12 3 3 7-7"/>',
+  grid: '<rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>',
+  list: '<path d="M8 5h13M8 12h13M8 19h13M3 5h.1M3 12h.1M3 19h.1"/>',
+  refresh: '<path d="M20 7A9 9 0 1 0 21 14M20 2v6h-6"/>',
+  pen: '<path d="m15 3 6 6L9 21H3v-6zM12 6l6 6"/>',
 });
-const shelfLabels={all:'Tất cả đã lưu',want:'Muốn đọc',reading:'Đang đọc',completed:'Đã đọc',liked:'Đã thích',history:'Lịch sử đọc'};
-const palette={yellow:{name:'Vàng',hex:'#c8a91c',bg:'#74600b99'},green:{name:'Xanh lá',hex:'#56a86d',bg:'#2b694599'},blue:{name:'Xanh dương',hex:'#568bd4',bg:'#335a8c99'},purple:{name:'Tím',hex:'#a077cb',bg:'#71469b99'},pink:{name:'Hồng',hex:'#d47f9d',bg:'#94466399'},red:{name:'Đỏ',hex:'#cc655b',bg:'#8f383699'}};
-state.shelf='all';state.libraryLayout=load('library-layout','grid');state.libraryType='all';state.newsSource='all';state.newsRange='all';state.returnView='feed';
-let newsState={loading:true,error:'',updatedAt:null,stale:false,sources:[]},newsBusy=false;
-const canSavePersonal=()=>!account.loading&&(!account.user||account.ready);
-const entryFor=id=>libraryState.find(e=>e.id===id);
-const shelfFor=id=>entryFor(id)?.shelf||'want';
-function putLibrary(id,patch){if(!canSavePersonal())return;const old=entryFor(id)||{id,shelf:'want',progress:0,addedAt:new Date().toISOString()};libraryState=libraryState.filter(e=>e.id!==id);libraryState.push({...old,...patch});persist('library',libraryState)}
-function chooseShelf(id,shelf){if(!canSavePersonal()){toast('Chờ tải dữ liệu tài khoản trước khi lưu.');return}if(!saved.includes(id)){saved.push(id);persist('saved',saved)}putLibrary(id,{shelf,progress:shelf==='completed'?100:entryFor(id)?.progress||0,snapshot:items.find(x=>x.id===id)});render();toast('Đã chuyển vào kệ '+shelfLabels[shelf].toLocaleLowerCase())}
-const previousRebuild=rebuildItems;
-rebuildItems=function(){previousRebuild();items=[...communityItems,...custom,...newsItems,...seed];for(const entry of libraryState){if(entry.snapshot&&!items.some(x=>x.id===entry.id))items.push(entry.snapshot)}};
-const previousGo=go;
-go=function(view){document.querySelector('.selection-tools')?.remove();previousGo(view);if(view==='news')history.replaceState(null,'','#news');if(view==='saved')history.replaceState(null,'','#library/'+state.shelf);if(view!=='news'&&view!=='saved')history.replaceState(null,'',location.pathname)};
-const previousOpen=openItem;
-openItem=function(id){if(state.view!=='reader')state.returnView=state.view;const x=items.find(x=>x.id===id);if(x&&canSavePersonal()){putLibrary(id,{lastReadAt:new Date().toISOString(),shelf:saved.includes(id)?(shelfFor(id)==='want'?'reading':shelfFor(id)):'history',snapshot:x})}document.querySelector('.selection-tools')?.remove();previousOpen(id)};
-function deskDate(value,withTime=false){if(!value)return 'Chưa cập nhật';const date=new Date(value);if(!Number.isFinite(date.getTime()))return '';return date.toLocaleString('vi-VN',{day:'2-digit',month:'2-digit',year:'numeric',...(withTime?{hour:'2-digit',minute:'2-digit'}:{}),timeZone:'Asia/Bangkok'})}
-function shortDate(value){const diff=Date.now()-Date.parse(value);if(diff>=0&&diff<3600000)return Math.max(1,Math.floor(diff/60000))+' phút trước';if(diff>=0&&diff<86400000)return Math.floor(diff/3600000)+' giờ trước';return deskDate(value)}
-const navItem=(view,icon,label)=>`<button class="rail-item ${state.view===view?'active':''}" data-view="${view}" title="${label}" aria-label="${label}">${svg(icon)}<span>${label}</span></button>`;
-shell=function(content,rail){const library=state.view==='saved';const reader=state.view==='reader';const news=state.view==='news';const label=library?'Thư viện':news?'News':reader?'Không gian đọc':state.view==='notes'?'Highlights & Notes':state.view==='events'?'Seminar':'Khám phá';
-  return `<aside class="app-rail"><a class="rail-logo" href="#" aria-label="AIQS Project trang chủ">${svg('logo')}</a><nav>${navItem('feed','compass','Khám phá')}${navItem('news','news','News')}${navItem('saved','bookmark','Thư viện')}${navItem('notes','highlight','Ghi chú')}${navItem('events','calendar','Seminar')}</nav><div class="rail-bottom"><button class="rail-item" id="theme" title="Đổi giao diện" aria-label="Đổi giao diện">${svg('sun')}</button><button class="rail-profile" id="rail-account" aria-label="Tài khoản">${esc(typeof accountName==='function'?accountName().slice(0,1).toUpperCase():'B')}</button></div></aside>
-  <aside class="context-sidebar"><a class="workspace-brand" href="#">AIQS <span>Project</span></a><div class="context-heading">${svg(library?'book':news?'news':'compass')}<strong>${label}</strong></div>${library?`<button class="context-link" id="publications">${svg('pen')}Bài viết của tôi</button><button class="context-link ${state.shelf==='liked'?'active':''}" data-shelf="liked">${svg('heart')}Đã thích<span>${liked.length}</span></button><button class="context-link ${state.shelf==='history'?'active':''}" data-shelf="history">${svg('clock')}Lịch sử đọc</button><div class="section-label">KỆ SÁCH CỦA BẠN</div>${['all','want','reading','completed'].map((s,i)=>`<button class="context-link ${state.shelf===s?'active':''}" data-shelf="${s}">${svg(['grid','bookmark','book','check'][i])}${shelfLabels[s]}<span>${s==='all'?saved.length:saved.filter(id=>shelfFor(id)===s).length}</span></button>`).join('')}`:news?`<button class="context-link ${state.newsSource==='all'?'active':''}" data-source="all">${svg('grid')}Tất cả nguồn</button><div class="section-label">NGUỒN TIN CHÍNH THỨC</div>${newsSourcesMarkup()}<div class="context-info">Đọc tin từ nguồn gốc.<br>Lưu lại những điều đáng suy nghĩ.</div>`:`${[['Tất cả','compass','Tất cả nội dung'],['Seminar','calendar','Seminar'],['Video','play','Video Summary'],['News','news','News & Updates']].map(([t,i,l])=>`<button class="context-link ${(t==='News'?news:state.view==='feed'&&state.type===t)?'active':''}" data-channel="${t}">${svg(i)}${l}</button>`).join('')}<div class="section-label">THEO DÒNG TÒ MÒ</div>${topics.map((t,i)=>`<button class="topic-nav" data-topic="${esc(t)}"><span class="dot" style="background:${['#bdcba5','#cda985','#bca0d7','#9bb7cd'][i]}"></span>${esc(t)}</button>`).join('')}`}
-  <div class="context-bottom"><div class="profile"></div></div></aside>
-  <div class="shell workspace ${library?'library-workspace':''} ${news?'news-workspace':''} ${reader?'reading-workspace':''}"><a href="#" class="mobile-brand">AIQS <span>Project</span></a><header class="topbar"><div class="workspace-location">${svg(library?'book':news?'news':reader?'book':'compass')}<span>${label}</span></div><div class="search">${svg('search')}<input id="search" aria-label="Tìm kiếm nội dung" placeholder="${library?'Tìm trong thư viện…':news?'Tìm tin tức, chủ đề, nguồn…':'Tìm ý tưởng, chủ đề, nội dung…'}" value="${esc(state.query)}"><kbd>/</kbd></div><div class="topright"><button class="primary" id="add">${svg('pen')}Viết bài</button></div></header><div class="layout"><main>${content}</main>${!library?`<aside class="right-rail ${reader?'reader-rail':''}">${rail}</aside>`:''}</div><footer class="workspace-footer">AIQS Project <span>Tri thức đáng đọc. Ý tưởng đáng giữ.</span></footer></div>`;
+const shelfLabels = {
+  all: "Tất cả đã lưu",
+  want: "Muốn đọc",
+  reading: "Đang đọc",
+  completed: "Đã đọc",
+  liked: "Đã thích",
+  history: "Lịch sử đọc",
 };
-function libraryItems(){let list=items.filter(x=>state.shelf==='liked'?liked.includes(x.id):state.shelf==='history'?!!entryFor(x.id)?.lastReadAt:saved.includes(x.id)&&(state.shelf==='all'||shelfFor(x.id)===state.shelf));return list.filter(x=>(state.libraryType==='all'||x.type===state.libraryType)&&[x.title,x.author,x.topic,...x.tags].join(' ').toLocaleLowerCase().includes(state.query.toLocaleLowerCase())).sort((a,b)=>Date.parse(entryFor(b.id)?.lastReadAt||entryFor(b.id)?.addedAt||0)-Date.parse(entryFor(a.id)?.lastReadAt||entryFor(a.id)?.addedAt||0))}
-function libraryCard(x){const e=entryFor(x.id),progress=e?.progress||0,shelf=shelfFor(x.id);return `<article class="library-card"><button class="library-cover cover-${x.art||x.type.toLowerCase()}" data-open="${esc(x.id)}" aria-label="Đọc ${esc(x.title)}">${x.art?art(x.art):`<div class="typographic-cover"><span>${esc(x.type==='News'?x.author:x.topic)}</span>${svg(x.type==='News'?'news':'book')}<strong>${esc(x.title)}</strong><small>AIQS / ${esc(x.type)}</small></div>`}<span class="cover-type">${x.type==='Video'?'VIDEO SUMMARY':esc(x.type.toUpperCase())}</span></button><div class="library-card-info"><button class="library-title" data-open="${esc(x.id)}">${esc(x.title)}</button><p>${esc(x.author)}</p><div class="library-meta"><span>${shelf==='completed'?'Đã hoàn thành':progress?progress+'% đã đọc':esc(x.read)}</span><button class="icon" data-open="${esc(x.id)}" aria-label="Mở bài viết">${svg('book')}</button></div>${progress?`<div class="reading-progress"><span style="width:${Math.min(100,progress)}%"></span></div>`:''}<label class="shelf-picker"><span class="sr-only">Chuyển kệ ${esc(x.title)}</span><select data-move-shelf="${esc(x.id)}">${['want','reading','completed'].map(s=>`<option value="${s}" ${shelf===s?'selected':''}>${shelfLabels[s]}</option>`).join('')}</select></label></div></article>`}
-function renderLibrary(){const list=libraryItems();return `<section class="library-stage"><div class="stage-heading"><div><div class="breadcrumb">Thư viện <span>/</span> <strong>${shelfLabels[state.shelf]}</strong></div><p>${list.length} nội dung · Một chỗ cho những điều bạn muốn hiểu sâu hơn.</p></div><div class="view-switch" role="group" aria-label="Kiểu hiển thị"><button data-library-layout="grid" class="${state.libraryLayout==='grid'?'active':''}" aria-label="Dạng lưới">${svg('grid')}</button><button data-library-layout="list" class="${state.libraryLayout==='list'?'active':''}" aria-label="Dạng danh sách">${svg('list')}</button></div></div><div class="mobile-shelves">${['all','want','reading','completed','liked','history'].map(s=>`<button class="chip ${state.shelf===s?'active':''}" data-shelf="${s}">${shelfLabels[s]}</button>`).join('')}</div><div class="library-filters">${[['all','Tất cả'],['Seminar','Seminar'],['Video','Video Summary'],['News','News']].map(([v,t])=>`<button class="${state.libraryType===v?'active':''}" data-library-type="${v}">${t}</button>`).join('')}<span>${svg('bookmark')} Đã lưu là của bạn</span></div>${list.length?`<div class="library-grid ${state.libraryLayout==='list'?'list-view':''}">${list.map(libraryCard).join('')}</div>`:`<div class="library-empty">${svg(state.shelf==='completed'?'check':'book')}<h2>${state.query?'Chưa tìm thấy nội dung phù hợp':state.shelf==='completed'?'Một kệ sách chờ được lấp đầy.':'Ý tưởng hay bắt đầu từ một lần lưu.'}</h2><p>${state.query?'Thử một từ khóa khác hoặc đổi bộ lọc.':'Lưu một seminar, video hoặc bản tin. Quay lại đọc, highlight và ghi lại góc nhìn của bạn.'}</p><button class="primary" data-view="feed">Khám phá nội dung</button></div>`}</section>`}
-const sourceNames={openai:'OpenAI',google:'Google AI',huggingface:'Hugging Face'};
-function newsSourcesMarkup(){return Object.entries(sourceNames).map(([id,name])=>`<button class="context-link source-link ${state.newsSource===id?'active':''}" data-source="${id}"><span class="publisher-mark ${id}">${name.slice(0,1)}</span>${name}<span>${newsItems.filter(x=>x.sourceId===id).length}</span></button>`).join('')}
-function filteredNews(){return newsItems.filter(x=>(state.newsSource==='all'||x.sourceId===state.newsSource)&&(state.newsRange==='all'||Date.now()-x.timestamp<=Number(state.newsRange)*86400000)&&[x.title,x.desc,x.author].join(' ').toLocaleLowerCase().includes(state.query.toLocaleLowerCase()))}
-function newsCard(x,featured=false){return `<article class="news-card ${featured?'news-featured':''}"><div class="news-source"><span class="publisher-mark ${x.sourceId}">${esc(x.initial)}</span><strong>${esc(x.author)}</strong><time datetime="${esc(x.publishedAt)}">${shortDate(x.publishedAt)}</time></div>${featured?`<div class="news-kicker">TRONG DÒNG TIN</div>`:''}<button class="news-title" data-open="${esc(x.id)}">${esc(x.title)}</button>${x.desc?`<p>${esc(x.desc)}</p>`:''}<div class="news-card-bottom"><span>${svg('news')} ${x.read}</span><button class="action ${saved.includes(x.id)?'selected':''}" data-save="${esc(x.id)}" aria-label="${saved.includes(x.id)?'Bỏ lưu':'Lưu'} ${esc(x.title)}">${svg('bookmark')}${saved.includes(x.id)?'Đã lưu':'Lưu tin'}</button><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">Đọc nguồn gốc</a></div></article>`}
-function renderNews(){const list=filteredNews();return `<section class="news-desk"><div class="news-masthead"><div><span class="eyebrow">THE AIQS NEWSROOM</span><h1>News<span> & perspectives.</span></h1><p>Chuyện gì đang diễn ra — và điều gì đáng để hiểu sâu hơn.</p></div><div class="news-date">${new Date().toLocaleDateString('vi-VN',{weekday:'long',day:'numeric',month:'long',year:'numeric',timeZone:'Asia/Bangkok'})}<small>Tin từ nguồn chính thức</small></div></div><div class="news-controls"><div>${[['all','Tất cả'],['1','24 giờ qua'],['7','7 ngày qua']].map(([r,t])=>`<button class="chip ${state.newsRange===r?'active':''}" data-news-range="${r}">${t}</button>`).join('')}</div><button class="refresh-news" id="refresh-news" ${newsBusy?'disabled':''}>${svg('refresh')}${newsBusy?'Đang tải…':'Làm mới'}</button></div><div class="news-status" role="status">${newsState.loading?'Đang kết nối các nguồn tin…':newsState.error?esc(newsState.error):newsState.stale?'Đang hiển thị bản tin đã lưu. Nguồn trực tiếp tạm thời chưa phản hồi.':'Cập nhật lúc '+deskDate(newsState.updatedAt,true)+' · Làm mới mỗi 15 phút khi mở web.'}</div>${list.length?`${newsCard(list[0],true)}<div class="news-section-label">DÒNG TIN MỚI <span>${list.length} bài</span></div><div class="news-grid">${list.slice(1).map(x=>newsCard(x)).join('')}</div>`:`<div class="library-empty">${svg('news')}<h2>${newsState.loading?'Đang đọc những dòng tin mới.':'Chưa có tin phù hợp.'}</h2><p>${newsState.loading?'OpenAI · Google AI · Hugging Face':'Thử đổi nguồn, thời gian hoặc từ khóa tìm kiếm.'}</p></div>`}</section>`}
-function newsRail(){return `<section class="news-rail-intro"><span class="eyebrow">ĐỌC CÓ BỐI CẢNH</span><h3>Đằng sau một<br>dòng tiêu đề.</h3><p>Bản tin dẫn về nguồn gốc. Nội dung hiển thị giữ nguyên ngôn ngữ của nguồn.</p></section><div class="rail-section"><div class="rail-head"><h3>Nguồn đang theo dõi</h3></div>${newsSourcesMarkup()}</div><div class="news-explainer">${svg('bookmark')}<h3>Từ tin tức đến tri thức.</h3><p>Lưu tin vào thư viện, đánh dấu đoạn đáng nhớ và liên kết với những gì bạn đang học.</p><button data-view="saved">Mở thư viện của bạn</button></div><div class="rail-foot">Ngày đăng và nguồn được lấy từ RSS.<br>Đoạn giới thiệu không thay thế bài viết gốc.</div>`}
-const previousCard=card;card=function(x){return x.isNews?newsCard(x):previousCard(x)};
-const previousRightRail=rightRail;rightRail=function(){const base=previousRightRail();return newsItems.length?`<section class="rail-section rail-news"><div class="rail-head"><h3>News & Updates</h3><button data-view="news">Tất cả tin</button></div>${newsItems.slice(0,3).map(x=>`<button class="rail-news-item" data-open="${esc(x.id)}"><small>${esc(x.author)} · ${shortDate(x.publishedAt)}</small><strong>${esc(x.title)}</strong></button>`).join('')}</section>`+base:base};
-const previousNoteCard=noteCard;
-noteCard=function(n,withTitle=false){const html=previousNoteCard(n,withTitle);return html.replace('class="note-item"',`class="note-item" style="--note-color:${palette[n.color]?.hex||palette.yellow.hex}"`).replace('<button data-delete=',`<div class="note-meta"><span>${palette[n.color]?.name||'Vàng'}${n.createdAt?' · '+deskDate(n.createdAt):''}</span><button data-edit-note="${esc(n.key)}">Sửa</button></div><button data-delete=`)};
-const previousRender=render;
-render=function(){if(state.view==='saved'||state.view==='news'){document.querySelector('#app').innerHTML=shell(state.view==='saved'?renderLibrary():renderNews(),newsRail());bind();decorateAccount()}else previousRender();bindWorkspace();if(state.view==='reader')upgradeReader()};
-function bindWorkspace(){document.querySelectorAll('.rail-logo,.workspace-brand').forEach(e=>e.onclick=event=>{event.preventDefault();go('feed')});document.querySelectorAll('[data-shelf]').forEach(e=>e.onclick=()=>{state.shelf=e.dataset.shelf;go('saved')});document.querySelectorAll('[data-library-layout]').forEach(e=>e.onclick=()=>{state.libraryLayout=e.dataset.libraryLayout;persist('library-layout',state.libraryLayout);render()});document.querySelectorAll('[data-library-type]').forEach(e=>e.onclick=()=>{state.libraryType=e.dataset.libraryType;render()});document.querySelectorAll('[data-move-shelf]').forEach(e=>e.onchange=()=>chooseShelf(e.dataset.moveShelf,e.value));document.querySelectorAll('[data-channel]').forEach(e=>e.onclick=()=>{if(e.dataset.channel==='News'){go('news');return}state.type=e.dataset.channel;state.view='feed';state.query='';state.topic='';render();window.scrollTo(0,0)});document.querySelectorAll('[data-source]').forEach(e=>e.onclick=()=>{state.newsSource=e.dataset.source;go('news')});document.querySelectorAll('[data-news-range]').forEach(e=>e.onclick=()=>{state.newsRange=e.dataset.newsRange;render()});document.querySelectorAll('[data-edit-note]').forEach(e=>e.onclick=()=>editNote(e.dataset.editNote));document.querySelector('#refresh-news')?.addEventListener('click',()=>fetchNews(true));document.querySelector('#publications')?.addEventListener('click',()=>showMyPosts());document.querySelector('#rail-account')?.addEventListener('click',()=>showAuth());document.querySelectorAll('[data-save]').forEach(e=>{const previous=e.onclick;e.onclick=()=>{const id=e.dataset.save;if(!saved.includes(id)&&canSavePersonal())putLibrary(id,{shelf:entryFor(id)?.shelf==='history'?'want':shelfFor(id),snapshot:items.find(x=>x.id===id)});previous?.()}})}
-function upgradeReader(){document.querySelectorAll('.reader-rail a[href^="#"]').forEach(a=>a.onclick=event=>{event.preventDefault();document.getElementById(a.getAttribute('href').slice(1))?.scrollIntoView({behavior:'smooth',block:'start'})});const x=items.find(x=>x.id===state.id);if(!x)return;const back=document.querySelector('.reader .back');if(back){back.dataset.view=state.returnView||'feed';back.textContent='‹  '+(state.returnView==='news'?'Quay lại News':state.returnView==='saved'?'Quay lại thư viện':'Quay lại khám phá')}
-  const toolbar=document.querySelector('.reader-toolbar');if(toolbar&&!toolbar.querySelector('[data-reader-shelf]')){const control=document.createElement('label');control.className='reader-shelf';control.innerHTML=`${svg('book')}<span class="sr-only">Trạng thái đọc</span><select data-reader-shelf="${esc(x.id)}"><option value="">Thêm vào kệ đọc</option>${['want','reading','completed'].map(s=>`<option value="${s}" ${saved.includes(x.id)&&shelfFor(x.id)===s?'selected':''}>${shelfLabels[s]}</option>`).join('')}</select>`;control.querySelector('select').onchange=e=>{if(e.target.value)chooseShelf(x.id,e.target.value)};toolbar.append(control)}
-  const article=document.querySelector('.reader');if(article&&!article.querySelector('.reader-completion')){const end=document.createElement('div');end.className='reader-completion';end.innerHTML=`<div>${svg('check')}<strong>Một góc nhìn mới, đã được giữ lại.</strong><p>Đánh dấu đã đọc để tiếp tục hành trình trong thư viện.</p></div><button class="primary" id="complete-reading">${shelfFor(x.id)==='completed'?'Đã hoàn thành':'Đánh dấu đã đọc'}</button>`;end.querySelector('button').onclick=()=>chooseShelf(x.id,'completed');article.append(end)}
-  if(x.isNews){const hints=document.querySelectorAll('.reader .hint');if(hints.length>1)hints[hints.length-1].textContent='Trích giới thiệu từ RSS của '+x.author+'. Mở nguồn để đọc toàn bộ bài viết.';const source=document.querySelector('.reader-toolbar a');if(source)source.textContent='Đọc toàn bộ tại '+x.author}
+const palette = {
+  yellow: { name: "Vàng", hex: "#c8a91c", bg: "#74600b99" },
+  green: { name: "Xanh lá", hex: "#56a86d", bg: "#2b694599" },
+  blue: { name: "Xanh dương", hex: "#568bd4", bg: "#335a8c99" },
+  purple: { name: "Tím", hex: "#a077cb", bg: "#71469b99" },
+  pink: { name: "Hồng", hex: "#d47f9d", bg: "#94466399" },
+  red: { name: "Đỏ", hex: "#cc655b", bg: "#8f383699" },
+};
+state.shelf = "all";
+state.libraryLayout = load("library-layout", "grid");
+state.libraryType = "all";
+state.newsSource = "all";
+state.newsRange = "all";
+state.returnView = "feed";
+let newsState = {
+    loading: true,
+    error: "",
+    updatedAt: null,
+    stale: false,
+    sources: [],
+  },
+  newsBusy = false;
+const canSavePersonal = () =>
+  !account.loading && (!account.user || account.ready);
+const entryFor = (id) => libraryState.find((e) => e.id === id);
+const shelfFor = (id) => entryFor(id)?.shelf || "want";
+function putLibrary(id, patch) {
+  if (!canSavePersonal()) return;
+  const old = entryFor(id) || {
+    id,
+    shelf: "want",
+    progress: 0,
+    addedAt: new Date().toISOString(),
+  };
+  libraryState = libraryState.filter((e) => e.id !== id);
+  libraryState.push({ ...old, ...patch });
+  persist("library", libraryState);
+}
+function chooseShelf(id, shelf) {
+  if (!canSavePersonal()) {
+    toast("Chờ tải dữ liệu tài khoản trước khi lưu.");
+    return;
+  }
+  if (!saved.includes(id)) {
+    saved.push(id);
+    persist("saved", saved);
+  }
+  putLibrary(id, {
+    shelf,
+    progress: shelf === "completed" ? 100 : entryFor(id)?.progress || 0,
+    snapshot: items.find((x) => x.id === id),
+  });
+  render();
+  toast("Đã chuyển vào kệ " + shelfLabels[shelf].toLocaleLowerCase());
+}
+const previousRebuild = rebuildItems;
+rebuildItems = function () {
+  previousRebuild();
+  items = [...communityItems, ...custom, ...newsItems, ...seed];
+  for (const entry of libraryState) {
+    if (entry.snapshot && !items.some((x) => x.id === entry.id))
+      items.push(entry.snapshot);
+  }
+};
+const previousGo = go;
+go = function (view) {
+  document.querySelector(".selection-tools")?.remove();
+  previousGo(view);
+  if (view === "news") history.replaceState(null, "", "#news");
+  if (view === "saved")
+    history.replaceState(null, "", "#library/" + state.shelf);
+  if (view !== "news" && view !== "saved")
+    history.replaceState(null, "", location.pathname);
+};
+const previousOpen = openItem;
+openItem = function (id) {
+  if (state.view !== "reader") state.returnView = state.view;
+  const x = items.find((x) => x.id === id);
+  if (x && canSavePersonal()) {
+    putLibrary(id, {
+      lastReadAt: new Date().toISOString(),
+      shelf: saved.includes(id)
+        ? shelfFor(id) === "want"
+          ? "reading"
+          : shelfFor(id)
+        : "history",
+      snapshot: x,
+    });
+  }
+  document.querySelector(".selection-tools")?.remove();
+  previousOpen(id);
+};
+function deskDate(value, withTime = false) {
+  if (!value) return "Chưa cập nhật";
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return "";
+  return date.toLocaleString("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    ...(withTime ? { hour: "2-digit", minute: "2-digit" } : {}),
+    timeZone: "Asia/Bangkok",
+  });
+}
+function shortDate(value) {
+  const diff = Date.now() - Date.parse(value);
+  if (diff >= 0 && diff < 3600000)
+    return Math.max(1, Math.floor(diff / 60000)) + " phút trước";
+  if (diff >= 0 && diff < 86400000)
+    return Math.floor(diff / 3600000) + " giờ trước";
+  return deskDate(value);
+}
+const navItem = (view, icon, label) =>
+  `<button class="rail-item ${state.view === view ? "active" : ""}" data-view="${view}" title="${label}" aria-label="${label}">${svg(icon)}<span>${label}</span></button>`;
+shell = function (content, rail) {
+  const library = state.view === "saved";
+  const reader = state.view === "reader";
+  const news = state.view === "news";
+  const label = library
+    ? "Thư viện"
+    : news
+      ? "News"
+      : reader
+        ? "Không gian đọc"
+        : state.view === "notes"
+          ? "Highlights & Notes"
+          : state.view === "events"
+            ? "Seminar"
+            : "Khám phá";
+  return `<aside class="app-rail"><a class="rail-logo" href="#" aria-label="AIQS Project trang chủ">${svg("logo")}</a><nav>${navItem("feed", "compass", "Khám phá")}${navItem("news", "news", "News")}${navItem("saved", "bookmark", "Thư viện")}${navItem("notes", "highlight", "Ghi chú")}${navItem("events", "calendar", "Seminar")}</nav><div class="rail-bottom"><button class="rail-item" id="theme" title="Đổi giao diện" aria-label="Đổi giao diện">${svg("sun")}</button><button class="rail-profile" id="rail-account" aria-label="Tài khoản">${esc(typeof accountName === "function" ? accountName().slice(0, 1).toUpperCase() : "B")}</button></div></aside>
+  <aside class="context-sidebar"><a class="workspace-brand" href="#">AIQS <span>Project</span></a><div class="context-heading">${svg(library ? "book" : news ? "news" : "compass")}<strong>${label}</strong></div>${
+    library
+      ? `<button class="context-link" id="publications">${svg("pen")}Bài viết của tôi</button><button class="context-link ${state.shelf === "liked" ? "active" : ""}" data-shelf="liked">${svg("heart")}Đã thích<span>${liked.length}</span></button><button class="context-link ${state.shelf === "history" ? "active" : ""}" data-shelf="history">${svg("clock")}Lịch sử đọc</button><div class="section-label">KỆ SÁCH CỦA BẠN</div>${["all", "want", "reading", "completed"].map((s, i) => `<button class="context-link ${state.shelf === s ? "active" : ""}" data-shelf="${s}">${svg(["grid", "bookmark", "book", "check"][i])}${shelfLabels[s]}<span>${s === "all" ? saved.length : saved.filter((id) => shelfFor(id) === s).length}</span></button>`).join("")}`
+      : news
+        ? `<button class="context-link ${state.newsSource === "all" ? "active" : ""}" data-source="all">${svg("grid")}Tất cả nguồn</button><div class="section-label">NGUỒN TIN CHÍNH THỨC</div>${newsSourcesMarkup()}<div class="context-info">Đọc tin từ nguồn gốc.<br>Lưu lại những điều đáng suy nghĩ.</div>`
+        : `${[
+            ["Tất cả", "compass", "Tất cả nội dung"],
+            ["Seminar", "calendar", "Seminar"],
+            ["Video", "play", "Video Summary"],
+            ["News", "news", "News & Updates"],
+          ]
+            .map(
+              ([t, i, l]) =>
+                `<button class="context-link ${(t === "News" ? news : state.view === "feed" && state.type === t) ? "active" : ""}" data-channel="${t}">${svg(i)}${l}</button>`,
+            )
+            .join(
+              "",
+            )}<div class="section-label">THEO DÒNG TÒ MÒ</div>${topics.map((t, i) => `<button class="topic-nav" data-topic="${esc(t)}"><span class="dot" style="background:${["#bdcba5", "#cda985", "#bca0d7", "#9bb7cd"][i]}"></span>${esc(t)}</button>`).join("")}`
+  }
+  <div class="context-bottom"><div class="profile"></div></div></aside>
+  <div class="shell workspace ${library ? "library-workspace" : ""} ${news ? "news-workspace" : ""} ${reader ? "reading-workspace" : ""}"><a href="#" class="mobile-brand">AIQS <span>Project</span></a><header class="topbar"><div class="workspace-location">${svg(library ? "book" : news ? "news" : reader ? "book" : "compass")}<span>${label}</span></div><div class="search">${svg("search")}<input id="search" aria-label="Tìm kiếm nội dung" placeholder="${library ? "Tìm trong thư viện…" : news ? "Tìm tin tức, chủ đề, nguồn…" : "Tìm ý tưởng, chủ đề, nội dung…"}" value="${esc(state.query)}"><kbd>/</kbd></div><div class="topright"><button class="primary" id="add">${svg("pen")}Viết bài</button></div></header><div class="layout"><main>${content}</main>${!library ? `<aside class="right-rail ${reader ? "reader-rail" : ""}">${rail}</aside>` : ""}</div><footer class="workspace-footer">AIQS Project <span>Tri thức đáng đọc. Ý tưởng đáng giữ.</span></footer></div>`;
+};
+function libraryItems() {
+  let list = items.filter((x) =>
+    state.shelf === "liked"
+      ? liked.includes(x.id)
+      : state.shelf === "history"
+        ? !!entryFor(x.id)?.lastReadAt
+        : saved.includes(x.id) &&
+          (state.shelf === "all" || shelfFor(x.id) === state.shelf),
+  );
+  return list
+    .filter(
+      (x) =>
+        (state.libraryType === "all" || x.type === state.libraryType) &&
+        [x.title, x.author, x.topic, ...x.tags]
+          .join(" ")
+          .toLocaleLowerCase()
+          .includes(state.query.toLocaleLowerCase()),
+    )
+    .sort(
+      (a, b) =>
+        Date.parse(entryFor(b.id)?.lastReadAt || entryFor(b.id)?.addedAt || 0) -
+        Date.parse(entryFor(a.id)?.lastReadAt || entryFor(a.id)?.addedAt || 0),
+    );
+}
+function libraryCard(x) {
+  const e = entryFor(x.id),
+    progress = e?.progress || 0,
+    shelf = shelfFor(x.id);
+  return `<article class="library-card"><button class="library-cover cover-${x.art || x.type.toLowerCase()}" data-open="${esc(x.id)}" aria-label="Đọc ${esc(x.title)}">${x.art ? art(x.art) : `<div class="typographic-cover"><span>${esc(x.type === "News" ? x.author : x.topic)}</span>${svg(x.type === "News" ? "news" : "book")}<strong>${esc(x.title)}</strong><small>AIQS / ${esc(x.type)}</small></div>`}<span class="cover-type">${x.type === "Video" ? "VIDEO SUMMARY" : esc(x.type.toUpperCase())}</span></button><div class="library-card-info"><button class="library-title" data-open="${esc(x.id)}">${esc(x.title)}</button><p>${esc(x.author)}</p><div class="library-meta"><span>${shelf === "completed" ? "Đã hoàn thành" : progress ? progress + "% đã đọc" : esc(x.read)}</span><button class="icon" data-open="${esc(x.id)}" aria-label="Mở bài viết">${svg("book")}</button></div>${progress ? `<div class="reading-progress"><span style="width:${Math.min(100, progress)}%"></span></div>` : ""}<label class="shelf-picker"><span class="sr-only">Chuyển kệ ${esc(x.title)}</span><select data-move-shelf="${esc(x.id)}">${["want", "reading", "completed"].map((s) => `<option value="${s}" ${shelf === s ? "selected" : ""}>${shelfLabels[s]}</option>`).join("")}</select></label></div></article>`;
+}
+function renderLibrary() {
+  const list = libraryItems();
+  return `<section class="library-stage"><div class="stage-heading"><div><div class="breadcrumb">Thư viện <span>/</span> <strong>${shelfLabels[state.shelf]}</strong></div><p>${list.length} nội dung · Một chỗ cho những điều bạn muốn hiểu sâu hơn.</p></div><div class="view-switch" role="group" aria-label="Kiểu hiển thị"><button data-library-layout="grid" class="${state.libraryLayout === "grid" ? "active" : ""}" aria-label="Dạng lưới">${svg("grid")}</button><button data-library-layout="list" class="${state.libraryLayout === "list" ? "active" : ""}" aria-label="Dạng danh sách">${svg("list")}</button></div></div><div class="mobile-shelves">${["all", "want", "reading", "completed", "liked", "history"].map((s) => `<button class="chip ${state.shelf === s ? "active" : ""}" data-shelf="${s}">${shelfLabels[s]}</button>`).join("")}</div><div class="library-filters">${[
+    ["all", "Tất cả"],
+    ["Seminar", "Seminar"],
+    ["Video", "Video Summary"],
+    ["News", "News"],
+  ]
+    .map(
+      ([v, t]) =>
+        `<button class="${state.libraryType === v ? "active" : ""}" data-library-type="${v}">${t}</button>`,
+    )
+    .join(
+      "",
+    )}<span>${svg("bookmark")} Đã lưu là của bạn</span></div>${list.length ? `<div class="library-grid ${state.libraryLayout === "list" ? "list-view" : ""}">${list.map(libraryCard).join("")}</div>` : `<div class="library-empty">${svg(state.shelf === "completed" ? "check" : "book")}<h2>${state.query ? "Chưa tìm thấy nội dung phù hợp" : state.shelf === "completed" ? "Một kệ sách chờ được lấp đầy." : "Ý tưởng hay bắt đầu từ một lần lưu."}</h2><p>${state.query ? "Thử một từ khóa khác hoặc đổi bộ lọc." : "Lưu một seminar, video hoặc bản tin. Quay lại đọc, highlight và ghi lại góc nhìn của bạn."}</p><button class="primary" data-view="feed">Khám phá nội dung</button></div>`}</section>`;
+}
+const sourceNames = {
+  openai: "OpenAI",
+  google: "Google AI",
+  huggingface: "Hugging Face",
+};
+function newsSourcesMarkup() {
+  return Object.entries(sourceNames)
+    .map(
+      ([id, name]) =>
+        `<button class="context-link source-link ${state.newsSource === id ? "active" : ""}" data-source="${id}"><span class="publisher-mark ${id}">${name.slice(0, 1)}</span>${name}<span>${newsItems.filter((x) => x.sourceId === id).length}</span></button>`,
+    )
+    .join("");
+}
+function filteredNews() {
+  return newsItems.filter(
+    (x) =>
+      (state.newsSource === "all" || x.sourceId === state.newsSource) &&
+      (state.newsRange === "all" ||
+        Date.now() - x.timestamp <= Number(state.newsRange) * 86400000) &&
+      [x.title, x.desc, x.author]
+        .join(" ")
+        .toLocaleLowerCase()
+        .includes(state.query.toLocaleLowerCase()),
+  );
+}
+function newsCard(x, featured = false) {
+  return `<article class="news-card ${featured ? "news-featured" : ""}"><div class="news-source"><span class="publisher-mark ${x.sourceId}">${esc(x.initial)}</span><strong>${esc(x.author)}</strong><time datetime="${esc(x.publishedAt)}">${shortDate(x.publishedAt)}</time></div>${featured ? `<div class="news-kicker">TRONG DÒNG TIN</div>` : ""}<button class="news-title" data-open="${esc(x.id)}">${esc(x.title)}</button>${x.desc ? `<p>${esc(x.desc)}</p>` : ""}<div class="news-card-bottom"><span>${svg("news")} ${x.read}</span><button class="action ${saved.includes(x.id) ? "selected" : ""}" data-save="${esc(x.id)}" aria-label="${saved.includes(x.id) ? "Bỏ lưu" : "Lưu"} ${esc(x.title)}">${svg("bookmark")}${saved.includes(x.id) ? "Đã lưu" : "Lưu tin"}</button><a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">Đọc nguồn gốc</a></div></article>`;
+}
+function renderNews() {
+  const list = filteredNews();
+  return `<section class="news-desk"><div class="news-masthead"><div><span class="eyebrow">THE AIQS NEWSROOM</span><h1>News<span> & perspectives.</span></h1><p>Chuyện gì đang diễn ra — và điều gì đáng để hiểu sâu hơn.</p></div><div class="news-date">${new Date().toLocaleDateString("vi-VN", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Asia/Bangkok" })}<small>Tin từ nguồn chính thức</small></div></div><div class="news-controls"><div>${[
+    ["all", "Tất cả"],
+    ["1", "24 giờ qua"],
+    ["7", "7 ngày qua"],
+  ]
+    .map(
+      ([r, t]) =>
+        `<button class="chip ${state.newsRange === r ? "active" : ""}" data-news-range="${r}">${t}</button>`,
+    )
+    .join(
+      "",
+    )}</div><button class="refresh-news" id="refresh-news" ${newsBusy ? "disabled" : ""}>${svg("refresh")}${newsBusy ? "Đang tải…" : "Làm mới"}</button></div><div class="news-status" role="status">${newsState.loading ? "Đang kết nối các nguồn tin…" : newsState.error ? esc(newsState.error) : newsState.stale ? "Đang hiển thị bản tin đã lưu. Nguồn trực tiếp tạm thời chưa phản hồi." : "Cập nhật lúc " + deskDate(newsState.updatedAt, true) + " · Làm mới mỗi 15 phút khi mở web."}</div>${
+    list.length
+      ? `${newsCard(list[0], true)}<div class="news-section-label">DÒNG TIN MỚI <span>${list.length} bài</span></div><div class="news-grid">${list
+          .slice(1)
+          .map((x) => newsCard(x))
+          .join("")}</div>`
+      : `<div class="library-empty">${svg("news")}<h2>${newsState.loading ? "Đang đọc những dòng tin mới." : "Chưa có tin phù hợp."}</h2><p>${newsState.loading ? "OpenAI · Google AI · Hugging Face" : "Thử đổi nguồn, thời gian hoặc từ khóa tìm kiếm."}</p></div>`
+  }</section>`;
+}
+function newsRail() {
+  return `<section class="news-rail-intro"><span class="eyebrow">ĐỌC CÓ BỐI CẢNH</span><h3>Đằng sau một<br>dòng tiêu đề.</h3><p>Bản tin dẫn về nguồn gốc. Nội dung hiển thị giữ nguyên ngôn ngữ của nguồn.</p></section><div class="rail-section"><div class="rail-head"><h3>Nguồn đang theo dõi</h3></div>${newsSourcesMarkup()}</div><div class="news-explainer">${svg("bookmark")}<h3>Từ tin tức đến tri thức.</h3><p>Lưu tin vào thư viện, đánh dấu đoạn đáng nhớ và liên kết với những gì bạn đang học.</p><button data-view="saved">Mở thư viện của bạn</button></div><div class="rail-foot">Ngày đăng và nguồn được lấy từ RSS.<br>Đoạn giới thiệu không thay thế bài viết gốc.</div>`;
+}
+const previousCard = card;
+card = function (x) {
+  return x.isNews ? newsCard(x) : previousCard(x);
+};
+const previousRightRail = rightRail;
+rightRail = function () {
+  const base = previousRightRail();
+  return newsItems.length
+    ? `<section class="rail-section rail-news"><div class="rail-head"><h3>News & Updates</h3><button data-view="news">Tất cả tin</button></div>${newsItems
+        .slice(0, 3)
+        .map(
+          (x) =>
+            `<button class="rail-news-item" data-open="${esc(x.id)}"><small>${esc(x.author)} · ${shortDate(x.publishedAt)}</small><strong>${esc(x.title)}</strong></button>`,
+        )
+        .join("")}</section>` + base
+    : base;
+};
+const previousNoteCard = noteCard;
+noteCard = function (n, withTitle = false) {
+  const html = previousNoteCard(n, withTitle);
+  return html
+    .replace(
+      'class="note-item"',
+      `class="note-item" style="--note-color:${palette[n.color]?.hex || palette.yellow.hex}"`,
+    )
+    .replace(
+      "<button data-delete=",
+      `<div class="note-meta"><span>${palette[n.color]?.name || "Vàng"}${n.createdAt ? " · " + deskDate(n.createdAt) : ""}</span><button data-edit-note="${esc(n.key)}">Sửa</button></div><button data-delete=`,
+    );
+};
+const previousRender = render;
+render = function () {
+  if (state.view === "saved" || state.view === "news") {
+    document.querySelector("#app").innerHTML = shell(
+      state.view === "saved" ? renderLibrary() : renderNews(),
+      newsRail(),
+    );
+    bind();
+    decorateAccount();
+  } else previousRender();
+  bindWorkspace();
+  if (state.view === "reader") upgradeReader();
+};
+function bindWorkspace() {
+  document.querySelectorAll(".rail-logo,.workspace-brand").forEach(
+    (e) =>
+      (e.onclick = (event) => {
+        event.preventDefault();
+        go("feed");
+      }),
+  );
+  document.querySelectorAll("[data-shelf]").forEach(
+    (e) =>
+      (e.onclick = () => {
+        state.shelf = e.dataset.shelf;
+        go("saved");
+      }),
+  );
+  document.querySelectorAll("[data-library-layout]").forEach(
+    (e) =>
+      (e.onclick = () => {
+        state.libraryLayout = e.dataset.libraryLayout;
+        persist("library-layout", state.libraryLayout);
+        render();
+      }),
+  );
+  document.querySelectorAll("[data-library-type]").forEach(
+    (e) =>
+      (e.onclick = () => {
+        state.libraryType = e.dataset.libraryType;
+        render();
+      }),
+  );
+  document
+    .querySelectorAll("[data-move-shelf]")
+    .forEach(
+      (e) => (e.onchange = () => chooseShelf(e.dataset.moveShelf, e.value)),
+    );
+  document.querySelectorAll("[data-channel]").forEach(
+    (e) =>
+      (e.onclick = () => {
+        if (e.dataset.channel === "News") {
+          go("news");
+          return;
+        }
+        state.type = e.dataset.channel;
+        state.view = "feed";
+        state.query = "";
+        state.topic = "";
+        render();
+        window.scrollTo(0, 0);
+      }),
+  );
+  document.querySelectorAll("[data-source]").forEach(
+    (e) =>
+      (e.onclick = () => {
+        state.newsSource = e.dataset.source;
+        go("news");
+      }),
+  );
+  document.querySelectorAll("[data-news-range]").forEach(
+    (e) =>
+      (e.onclick = () => {
+        state.newsRange = e.dataset.newsRange;
+        render();
+      }),
+  );
+  document
+    .querySelectorAll("[data-edit-note]")
+    .forEach((e) => (e.onclick = () => editNote(e.dataset.editNote)));
+  document
+    .querySelector("#refresh-news")
+    ?.addEventListener("click", () => fetchNews(true));
+  document
+    .querySelector("#publications")
+    ?.addEventListener("click", () => showMyPosts());
+  document
+    .querySelector("#rail-account")
+    ?.addEventListener("click", () => showAuth());
+  document.querySelectorAll("[data-save]").forEach((e) => {
+    const previous = e.onclick;
+    e.onclick = () => {
+      const id = e.dataset.save;
+      if (!saved.includes(id) && canSavePersonal())
+        putLibrary(id, {
+          shelf: entryFor(id)?.shelf === "history" ? "want" : shelfFor(id),
+          snapshot: items.find((x) => x.id === id),
+        });
+      previous?.();
+    };
+  });
+}
+function upgradeReader() {
+  document.querySelectorAll('.reader-rail a[href^="#"]').forEach(
+    (a) =>
+      (a.onclick = (event) => {
+        event.preventDefault();
+        document
+          .getElementById(a.getAttribute("href").slice(1))
+          ?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }),
+  );
+  const x = items.find((x) => x.id === state.id);
+  if (!x) return;
+  const back = document.querySelector(".reader .back");
+  if (back) {
+    back.dataset.view = state.returnView || "feed";
+    back.textContent =
+      "‹  " +
+      (state.returnView === "news"
+        ? "Quay lại News"
+        : state.returnView === "saved"
+          ? "Quay lại thư viện"
+          : "Quay lại khám phá");
+  }
+  const toolbar = document.querySelector(".reader-toolbar");
+  if (toolbar && !toolbar.querySelector("[data-reader-shelf]")) {
+    const control = document.createElement("label");
+    control.className = "reader-shelf";
+    control.innerHTML = `${svg("book")}<span class="sr-only">Trạng thái đọc</span><select data-reader-shelf="${esc(x.id)}"><option value="">Thêm vào kệ đọc</option>${["want", "reading", "completed"].map((s) => `<option value="${s}" ${saved.includes(x.id) && shelfFor(x.id) === s ? "selected" : ""}>${shelfLabels[s]}</option>`).join("")}</select>`;
+    control.querySelector("select").onchange = (e) => {
+      if (e.target.value) chooseShelf(x.id, e.target.value);
+    };
+    toolbar.append(control);
+  }
+  const article = document.querySelector(".reader");
+  if (article && !article.querySelector(".reader-completion")) {
+    const end = document.createElement("div");
+    end.className = "reader-completion";
+    end.innerHTML = `<div>${svg("check")}<strong>Một góc nhìn mới, đã được giữ lại.</strong><p>Đánh dấu đã đọc để tiếp tục hành trình trong thư viện.</p></div><button class="primary" id="complete-reading">${shelfFor(x.id) === "completed" ? "Đã hoàn thành" : "Đánh dấu đã đọc"}</button>`;
+    end.querySelector("button").onclick = () => chooseShelf(x.id, "completed");
+    article.append(end);
+  }
+  if (x.isNews) {
+    const hints = document.querySelectorAll(".reader .hint");
+    if (hints.length > 1)
+      hints[hints.length - 1].textContent =
+        "Trích giới thiệu từ RSS của " +
+        x.author +
+        ". Mở nguồn để đọc toàn bộ bài viết.";
+    const source = document.querySelector(".reader-toolbar a");
+    if (source) source.textContent = "Đọc toàn bộ tại " + x.author;
+  }
   restoreHighlights();
 }
-function newsToItem(n){return{id:'news-'+n.id,type:'News',topic:'Trí tuệ nhân tạo',isNews:true,sourceId:n.sourceId,publishedAt:n.publishedAt,timestamp:Date.parse(n.publishedAt),title:n.title,desc:n.excerpt.replace(/<[^>]+>/g,'').trim(),author:n.source,initial:n.source.slice(0,1),date:deskDate(n.publishedAt),read:'Bản tin nguồn',duration:'',likes:0,views:'',tags:['AI News',n.source],art:null,url:n.url,sections:[],takeaway:n.excerpt.replace(/<[^>]+>/g,'').trim()||n.title}}
-async function fetchNews(manual=false){if(newsBusy)return;newsBusy=true;newsState.loading=!newsItems.length;const button=document.querySelector('#refresh-news');if(button){button.disabled=true;button.textContent='Đang tải…'}try{let data;try{const response=await fetch('/api/news?v=2',{signal:AbortSignal.timeout(12000)});if(!response.ok)throw new Error('News API unavailable');data=await response.json();if(!Array.isArray(data.items)||!data.items.length)throw new Error('Empty response')}catch{const fallback=await fetch('/news-snapshot.json',{signal:AbortSignal.timeout(5000)});if(!fallback.ok)throw new Error('News unavailable');data={...await fallback.json(),stale:true}}
-    newsItems=data.items.filter(n=>n&&typeof n.title==='string'&&typeof n.excerpt==='string'&&typeof n.source==='string'&&Object.hasOwn(sourceNames,n.sourceId)&&/^https:\/\//.test(n.url)&&Number.isFinite(Date.parse(n.publishedAt))).map(newsToItem);newsState={loading:false,error:'',updatedAt:data.updatedAt,stale:!!data.stale,sources:data.sources||[]};rebuildItems();if(manual)toast(data.stale?'Đang dùng bản tin lưu gần nhất.':'Đã kiểm tra bản tin mới nhất.');
-  }catch{newsState.loading=false;newsState.error='Chưa kết nối được nguồn tin. Bạn có thể thử làm mới sau.'}finally{newsBusy=false;if((state.view==='news'||state.view==='feed')&&!document.querySelector('dialog[open]')&&!['INPUT','TEXTAREA'].includes(document.activeElement?.tagName))render();else if(button){button.disabled=false;button.textContent='Làm mới'}}}
-let progressTimer;document.addEventListener('scroll',()=>{clearTimeout(progressTimer);progressTimer=setTimeout(()=>{if(state.view!=='reader'||!saved.includes(state.id)||!canSavePersonal())return;const content=document.querySelector('#reading-content');if(!content)return;const r=content.getBoundingClientRect(),progress=Math.round(Math.max(0,Math.min(100,(innerHeight-r.top)/Math.max(r.height,1)*100)));if(progress>=(entryFor(state.id)?.progress||0)+5)putLibrary(state.id,{progress})},500)},{passive:true});
-window.addEventListener('hashchange',()=>{if(location.hash==='#news')go('news');else if(location.hash.startsWith('#library/')){state.shelf=Object.hasOwn(shelfLabels,location.hash.slice(9))?location.hash.slice(9):'all';go('saved')}});
+function newsToItem(n) {
+  return {
+    id: "news-" + n.id,
+    type: "News",
+    topic: "Trí tuệ nhân tạo",
+    isNews: true,
+    sourceId: n.sourceId,
+    publishedAt: n.publishedAt,
+    timestamp: Date.parse(n.publishedAt),
+    title: n.title,
+    desc: n.excerpt.replace(/<[^>]+>/g, "").trim(),
+    author: n.source,
+    initial: n.source.slice(0, 1),
+    date: deskDate(n.publishedAt),
+    read: "Bản tin nguồn",
+    duration: "",
+    likes: 0,
+    views: "",
+    tags: ["AI News", n.source],
+    art: null,
+    url: n.url,
+    sections: [],
+    takeaway: n.excerpt.replace(/<[^>]+>/g, "").trim() || n.title,
+  };
+}
+async function fetchNews(manual = false) {
+  if (newsBusy) return;
+  newsBusy = true;
+  newsState.loading = !newsItems.length;
+  const button = document.querySelector("#refresh-news");
+  if (button) {
+    button.disabled = true;
+    button.textContent = "Đang tải…";
+  }
+  try {
+    let data;
+    try {
+      const response = await fetch("/api/news?v=2", {
+        signal: AbortSignal.timeout(12000),
+      });
+      if (!response.ok) throw new Error("News API unavailable");
+      data = await response.json();
+      if (!Array.isArray(data.items) || !data.items.length)
+        throw new Error("Empty response");
+    } catch {
+      const fallback = await fetch("/news-snapshot.json", {
+        signal: AbortSignal.timeout(5000),
+      });
+      if (!fallback.ok) throw new Error("News unavailable");
+      data = { ...(await fallback.json()), stale: true };
+    }
+    newsItems = data.items
+      .filter(
+        (n) =>
+          n &&
+          typeof n.title === "string" &&
+          typeof n.excerpt === "string" &&
+          typeof n.source === "string" &&
+          Object.hasOwn(sourceNames, n.sourceId) &&
+          /^https:\/\//.test(n.url) &&
+          Number.isFinite(Date.parse(n.publishedAt)),
+      )
+      .map(newsToItem);
+    newsState = {
+      loading: false,
+      error: "",
+      updatedAt: data.updatedAt,
+      stale: !!data.stale,
+      sources: data.sources || [],
+    };
+    rebuildItems();
+    if (manual)
+      toast(
+        data.stale
+          ? "Đang dùng bản tin lưu gần nhất."
+          : "Đã kiểm tra bản tin mới nhất.",
+      );
+  } catch {
+    newsState.loading = false;
+    newsState.error =
+      "Chưa kết nối được nguồn tin. Bạn có thể thử làm mới sau.";
+  } finally {
+    newsBusy = false;
+    if (
+      (state.view === "news" || state.view === "feed") &&
+      !document.querySelector("dialog[open]") &&
+      !["INPUT", "TEXTAREA"].includes(document.activeElement?.tagName)
+    )
+      render();
+    else if (button) {
+      button.disabled = false;
+      button.textContent = "Làm mới";
+    }
+  }
+}
+let progressTimer;
+document.addEventListener(
+  "scroll",
+  () => {
+    clearTimeout(progressTimer);
+    progressTimer = setTimeout(() => {
+      if (
+        state.view !== "reader" ||
+        !saved.includes(state.id) ||
+        !canSavePersonal()
+      )
+        return;
+      const content = document.querySelector("#reading-content");
+      if (!content) return;
+      const r = content.getBoundingClientRect(),
+        progress = Math.round(
+          Math.max(
+            0,
+            Math.min(
+              100,
+              ((innerHeight - r.top) / Math.max(r.height, 1)) * 100,
+            ),
+          ),
+        );
+      if (progress >= (entryFor(state.id)?.progress || 0) + 5)
+        putLibrary(state.id, { progress });
+    }, 500);
+  },
+  { passive: true },
+);
+window.addEventListener("hashchange", () => {
+  if (location.hash === "#news") go("news");
+  else if (location.hash.startsWith("#library/")) {
+    state.shelf = Object.hasOwn(shelfLabels, location.hash.slice(9))
+      ? location.hash.slice(9)
+      : "all";
+    go("saved");
+  }
+});
 rebuildItems();
-if(location.hash==='#news')state.view='news';else if(location.hash.startsWith('#library/')){state.view='saved';state.shelf=Object.hasOwn(shelfLabels,location.hash.slice(9))?location.hash.slice(9):'all'}render();
-if(typeof fetch==='function'){fetchNews();setInterval(()=>{if(document.visibilityState!=='hidden')fetchNews()},900000)}
+if (location.hash === "#news") state.view = "news";
+else if (location.hash.startsWith("#library/")) {
+  state.view = "saved";
+  state.shelf = Object.hasOwn(shelfLabels, location.hash.slice(9))
+    ? location.hash.slice(9)
+    : "all";
+}
+render();
+if (typeof fetch === "function") {
+  fetchNews();
+  setInterval(() => {
+    if (document.visibilityState !== "hidden") fetchNews();
+  }, 900000);
+}

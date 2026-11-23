@@ -12,7 +12,7 @@ Không cần cài dependencies hoặc bước build. Mã nguồn: `dist/index.ht
 
 Tính năng: tìm kiếm, lọc định dạng/chủ đề, lưu thư viện, yêu thích, trang đọc, highlight trong từng đoạn, ghi chú, liên kết nội dung liên quan, tải lịch .ics và giao diện sáng/tối. Soạn bài với xem trước, lưu nháp, đăng bài, chỉnh sửa và gỡ về nháp. Supabase hỗ trợ đăng ký, xác nhận email, đăng nhập, reset mật khẩu và đồng bộ dữ liệu cá nhân qua RLS.
 
-Nội dung mẫu và lịch seminar là minh họa. Một số liên kết nguồn dẫn đến kết quả tìm kiếm video và được ghi rõ trong trang đọc. Bản tóm tắt không phải transcript đã xác minh. Chế độ khách lưu localStorage; khi có project Supabase, dữ liệu tài khoản lưu trong database. Hiện `dist/config.js` chưa có Project URL/key; chưa thể đăng ký hay đăng bài thật. Xem `SUPABASE_SETUP.md` và chạy `supabase/schema.sql` để kết nối. Không có AI tự tạo summary. Font Google có fallback sans-serif.
+Nội dung mẫu và lịch seminar là minh họa. Một số liên kết nguồn dẫn đến kết quả tìm kiếm video và được ghi rõ trong trang đọc. Bản tóm tắt không phải transcript đã xác minh. Chế độ khách lưu localStorage; khi có project Supabase, dữ liệu tài khoản lưu trong database. Hiện `dist/config.js` chưa có Project URL/key; chưa thể đăng ký hay đăng bài thật. Xem `SUPABASE_SETUP.md` và chạy `supabase/schema.sql` để kết nối. Không có AI tự tạo summary. Font được phục vụ cục bộ, có fallback system-ui.
 
 Kiểm tra: `node --check dist/app.js`, `node --check dist/account.js`, `node verify.cjs`, `node verify-account.cjs`. Kiểm tra mock không thay thế kiểm tra Auth/RLS trên Supabase thật.
 
@@ -33,3 +33,9 @@ Trình viết bài hỗ trợ Markdown, công thức `$...$` / `$$...$$` (cũng 
 Ảnh khách lưu bằng Blob trong IndexedDB và tham chiếu `local-image:UUID`, nên mở lại bản nháp trên cùng thiết bị vẫn hiện. Khi lưu bài bằng tài khoản đã kết nối, ảnh chuyển vào Supabase Storage private bucket `post-images`; bài chỉ lưu tham chiếu `supabase-image:owner/UUID.webp`. Ảnh bản nháp chỉ tác giả đọc được, ảnh của bài đã đăng đọc qua signed URL. Project cũ cần chạy migration `003_article_images.sql`; project mới đã có trong schema hoàn chỉnh. Chưa có project Supabase nên phần Storage/Auth live vẫn chưa được kiểm thử.
 
 Marked 18.2.1, DOMPurify 3.5.0 và KaTeX 0.19.1 được lưu cục bộ trong `dist/vendor`, tải khi cần dùng trình viết hoặc đọc bài có định dạng. Nguồn npm được kiểm tra SHA-512 bởi `tools/vendor-rich.py`. HTML thô được escape, đường dẫn ảnh/link được kiểm tra, HTML kết quả được lọc và KaTeX chạy với `trust: false`. Kiểm tra parser: `node verify-rich.cjs`.
+
+## Font và mã nguồn
+
+Unbounded dùng cho logo, tiêu đề và tiêu đề thẻ; Be Vietnam Pro dùng cho giao diện, bài đọc và trình viết. WOFF2 cho Latin, Latin Extended và tiếng Việt được phục vụ từ `dist/fonts/`, kèm giấy phép OFL và manifest SHA-256. Web không gọi Google Fonts khi chạy. `python tools/vendor-fonts.py` tải lại font từ nguồn Google Fonts chính thức.
+
+JS, CSS và HTML do dự án viết được định dạng bằng Prettier 3.6.2 để dễ đọc/debug trong DevTools. Chạy `npx prettier@3.6.2 --write dist/*.js dist/*.css dist/index.html tools/*.mjs verify*.cjs verify-news.mjs`; bỏ qua mã thư viện bên thứ ba và font theo `.prettierignore`.
