@@ -1,0 +1,51 @@
+[
+  {
+    "package": "katex",
+    "version": "0.19.1",
+    "integrity": "sha512-jG8uKntjSEcm2EpQOh0XturpPuuC9r3Sq5HLHdsFdWZT27E672SF19QEi+of0/YeOy15lDgRhKvr5614uRrEfA==",
+    "files": [
+      "LICENSE",
+      "katex.min.css",
+      "katex.min.js",
+      "fonts/KaTeX_AMS-Regular.woff2",
+      "fonts/KaTeX_Caligraphic-Bold.woff2",
+      "fonts/KaTeX_Caligraphic-Regular.woff2",
+      "fonts/KaTeX_Fraktur-Bold.woff2",
+      "fonts/KaTeX_Fraktur-Regular.woff2",
+      "fonts/KaTeX_Main-Bold.woff2",
+      "fonts/KaTeX_Main-BoldItalic.woff2",
+      "fonts/KaTeX_Main-Italic.woff2",
+      "fonts/KaTeX_Main-Regular.woff2",
+      "fonts/KaTeX_Math-BoldItalic.woff2",
+      "fonts/KaTeX_Math-Italic.woff2",
+      "fonts/KaTeX_SansSerif-Bold.woff2",
+      "fonts/KaTeX_SansSerif-Italic.woff2",
+      "fonts/KaTeX_SansSerif-Regular.woff2",
+      "fonts/KaTeX_Script-Regular.woff2",
+      "fonts/KaTeX_Size1-Regular.woff2",
+      "fonts/KaTeX_Size2-Regular.woff2",
+      "fonts/KaTeX_Size3-Regular.woff2",
+      "fonts/KaTeX_Size4-Regular.woff2",
+      "fonts/KaTeX_Typewriter-Regular.woff2"
+    ]
+  },
+  {
+    "package": "marked",
+    "version": "18.2.1",
+    "integrity": "sha512-ii4bxCTCqqwpT86XZWgJNs+ZnAIZksmLGYMViWA7PDIXYIeNo1x6cDdX3JOip9NM/cI6p8z57FxliACboTruMA==",
+    "files": [
+      "LICENSE",
+      "marked.umd.js"
+    ]
+  },
+  {
+    "package": "dompurify",
+    "version": "3.5.0",
+    "integrity": "sha512-LYC0ZkE8P1V42JsRYTwMdme/2ET8SpOc5AA2eOFjP/IadvRd2fwiT4TVz5vkfy0XUx12aS2UaRkTnfVPNOv9vw==",
+    "files": [
+      "LICENSE",
+      "LICENSE-MPL",
+      "purify.min.js"
+    ]
+  }
+]

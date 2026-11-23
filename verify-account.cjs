@@ -5,7 +5,7 @@ let writes=[],posts=[],rows=[],postPayload=null,failWrites=false;
 const fakeSupa={from(table){const q={select(){return q},eq(){return q},order(){return q},limit(){return Promise.resolve({data:posts,error:null})},upsert(data){writes.push(data);return Promise.resolve({error:failWrites?new Error('offline'):null})},insert(data){postPayload=data;return q},update(data){postPayload=data;return q},single(){return Promise.resolve({data:{id:'00000000-0000-0000-0000-000000000099',...postPayload,created_at:'2026-11-23T00:00:00Z'},error:null})},then(resolve,reject){return Promise.resolve({data:rows,error:null}).then(resolve,reject)}};return q}};
 const sandbox={console,URL,Blob,crypto:require('crypto').webcrypto,localStorage:{getItem:k=>storage.get(k)||null,setItem:(k,v)=>storage.set(k,v),removeItem:k=>storage.delete(k)},MutationObserver:class{observe(){}},document:{body:{classList:node('body').classList,append(){}},createElement:()=>node('created'),querySelector:node,querySelectorAll(){return []},addEventListener(){}},window:{LUMA_SUPABASE:{},addEventListener(){},scrollTo(){}},history:{replaceState(){}},location:{hash:'',pathname:'/',origin:'http://localhost',search:''},setTimeout:()=>0,clearTimeout(){},fakeSupa};
 const ctx=vm.createContext(sandbox),run=s=>vm.runInContext(s,ctx);
-run(fs.readFileSync('dist/app.js','utf8'));run(fs.readFileSync('dist/account.js','utf8'));run('supa=fakeSupa');
+run(fs.readFileSync('dist/app.js','utf8'));run(fs.readFileSync('dist/account.js','utf8'));run(fs.readFileSync('dist/workspace.js','utf8'));run('supa=fakeSupa');
 (async()=>{
   rows=[{key:'saved',value:['world']},{key:'notes',value:[{key:'n1',id:'world',text:'Private A',quote:''}]}];
   await run("refreshSession({id:'user-a',email:'a@example.com',user_metadata:{display_name:'Alice'}},true)");
@@ -18,5 +18,10 @@ run(fs.readFileSync('dist/app.js','utf8'));run(fs.readFileSync('dist/account.js'
   run("postRows.push({...postRows[0],id:'foreign',author_id:'user-a'})");assert.equal(run("!!isOwnPost('post-foreign')"),false);assert.equal(run("!!isOwnPost('post-00000000-0000-0000-0000-000000000099')"),true);
   await run('refreshSession(null,true)');assert.equal(run('account.user'),null);assert.equal(run('notes.length'),0);assert.equal(run("draftKey()"),'luma-writer-guest');
   assert.equal(run("bodySections('Intro\\n\\n## Heading\\nBody')[1][0]"),'Heading');assert.ok(run("esc('<img onerror=alert(1)>')").startsWith('&lt;'));
+  run("chooseShelf('world','reading');state.shelf='reading';go('saved')");assert.ok(node('#app').innerHTML.includes('World Models:'));
+  run("chooseShelf('world','completed');state.shelf='completed';render()");assert.equal(run("shelfFor('world')"),'completed');assert.equal(run("entryFor('world').progress"),100);
+  assert.equal(run("newsToItem({id:'test',sourceId:'openai',source:'OpenAI',title:'News',excerpt:'<img src=x>Good',publishedAt:'2026-01-01',url:'https://openai.com/test'}).desc"),'Good');
+  run("putLibrary('archived-news',{shelf:'want',snapshot:{...seed[0],id:'archived-news',title:'Archived news'}});rebuildItems()");assert.ok(run("items.some(x=>x.id==='archived-news')"));
+  rows=[];await run("refreshSession({id:'user-c',email:'c@example.com',user_metadata:{}},true)");assert.equal(run('libraryState.length'),0);
   console.log('10 account checks passed: hydration, owner-bound sync, failed-write recovery, account isolation, post creation, feed insertion, ownership, sign-out isolation, section parsing, escaping. Mock tests; live Supabase/RLS still needs project configuration.');
 })().catch(e=>{console.error(e);process.exitCode=1});

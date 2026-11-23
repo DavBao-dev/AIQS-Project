@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+.wrangler/
+.openai/
+node_modules/
+*.log
+*.zip
+__pycache__/
+.DS_Store
+Thumbs.db

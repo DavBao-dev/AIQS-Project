@@ -1,0 +1,51 @@
+name: Check and deploy
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Check JavaScript syntax
+        run: |
+          for file in dist/*.js tools/*.mjs; do node --check "$file"; done
+      - name: Verify feed, accounts, news and rich content
+        run: |
+          node verify.cjs
+          node verify-account.cjs
+          node verify-news.mjs
+          node verify-rich.cjs
+
+  deploy:
+    name: Deploy production
+    needs: check
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: cloudflare-production
+      cancel-in-progress: false
+    environment:
+      name: production
+      url: https://aiqs-project.pages.dev/
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Deploy existing Cloudflare Pages project
+        run: npx --yes wrangler@4.166.0 pages deploy dist --project-name aiqs-project --branch main --commit-hash "$GITHUB_SHA"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

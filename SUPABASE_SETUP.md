@@ -32,3 +32,9 @@ Mỗi nhóm dữ liệu cá nhân đồng bộ theo dòng riêng; nếu cùng t�
 5. Thử ngắt mạng khi lưu: kiểm tra cảnh báo đồng bộ và thử lại. Không coi test mock là bằng chứng RLS đã chạy trên project thật.
 
 SDK `@supabase/supabase-js@2.119.2` tải từ esm.sh; frontend cần truy cập CDN và endpoint của project. Auth dùng Supabase SDK để lưu/refresh session, không tự lưu mật khẩu. RLS mới là ranh giới bảo vệ dữ liệu; không bỏ qua bước chạy SQL.
+
+## Ảnh trong bài viết
+
+Schema mới tạo private bucket `post-images`. Nếu project đã chạy schema cũ, chạy migration `supabase/migrations/003_article_images.sql`. Giữ bucket ở chế độ private. Chỉ tác giả upload vào thư mục UUID của mình; ảnh bản nháp chỉ tác giả đọc; ảnh bài published được đọc qua signed URL khi đúng tác giả sở hữu ảnh đó. Không cần service_role key ở frontend.
+
+Kiểm tra với hai tài khoản sau kết nối: A tải ảnh và lưu nháp; B không lấy được signed URL của ảnh đó. Khi A đăng bài, khách/B xem được ảnh. Khi A gỡ bài về nháp, yêu cầu cấp signed URL mới của khách/B phải bị từ chối. Signed URL đã cấp trước đó vẫn có hiệu lực đến khi hết hạn (tối đa một giờ).

@@ -1,0 +1,343 @@
+{
+  "updatedAt": "2026-11-23T10:25:49.621Z",
+  "sources": [
+    {
+      "id": "openai",
+      "ok": true
+    },
+    {
+      "id": "google",
+      "ok": true
+    },
+    {
+      "id": "huggingface",
+      "ok": true
+    }
+  ],
+  "items": [
+    {
+      "id": "openai-%2Findex%2Fperplexity-and-intelligence",
+      "title": "Perplexity and Intelligence",
+      "url": "https://openai.com/index/perplexity-and-intelligence",
+      "excerpt": "How perplexity measures progress in AI models, and why it could help developers establish a shared approach to evaluating emerging capabilities.",
+      "publishedAt": "2026-11-22T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Findex%2Fcombatting-adversarial-distillation",
+      "title": "Combatting adversarial distillation",
+      "url": "https://openai.com/index/combatting-adversarial-distillation",
+      "excerpt": "OpenAI’s layered approach to adversarial distillation combines model training, safeguards, detection, and enforcement to protect against capability extraction.",
+      "publishedAt": "2026-11-20T10:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Fbusiness%2Fcustomer-stories%2Fhebbia",
+      "title": "Hebbia sees improvements in financial research with GPT-6 Astra",
+      "url": "https://openai.com/business/customer-stories/hebbia",
+      "excerpt": "Hebbia tested GPT-6 Astra for financial research. Its prerelease evaluations found gains in source coverage, citation relevance, and presentation quality.",
+      "publishedAt": "2026-11-20T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Findex%2Fintroducing-medchembench",
+      "title": "Can AI help scientists identify promising drug candidates?",
+      "url": "https://openai.com/index/introducing-medchembench",
+      "excerpt": "MedChemBench evaluates how well AI models interpret molecular structures, reason from experimental evidence, and select compounds in early drug discovery.",
+      "publishedAt": "2026-11-20T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Finkling2mini",
+      "title": "Welcome Inkling 2 Mini, Cutting-edge Performance for your Local Setup",
+      "url": "https://huggingface.co/blog/inkling2mini",
+      "excerpt": "",
+      "publishedAt": "2026-11-20T00:00:00.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fharness-adapters-at-scale",
+      "title": "Introducing harness adapters: adapt your favorite model to your harness to improve performance and cost",
+      "url": "https://huggingface.co/blog/harness-adapters-at-scale",
+      "excerpt": "",
+      "publishedAt": "2026-11-20T00:00:00.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "google-%2Finnovation-and-ai%2Ftechnology%2Fdevelopers-tools%2Fgemini-api-tool-retrieval%2F",
+      "title": "Introducing Tool Retrieval in the Gemini API",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-api-tool-retrieval/",
+      "excerpt": "Give your agents access to hundreds of tools while using fewer tokens with Tool Retrieval, now in preview in the Gemini API.",
+      "publishedAt": "2026-11-19T18:00:00.000Z",
+      "source": "Google AI",
+      "sourceId": "google"
+    },
+    {
+      "id": "google-%2Finnovation-and-ai%2Ftechnology%2Fai%2Fdialogues-walter-isaacson%2F",
+      "title": "Walter Isaacson on curiosity and creativity in the AI age.",
+      "url": "https://blog.google/innovation-and-ai/technology/ai/dialogues-walter-isaacson/",
+      "excerpt": "Walter Isaacson joins Google to discuss how history’s greatest innovators inspire creativity and human judgment in the AI age. Watch the episode.",
+      "publishedAt": "2026-11-19T17:00:00.000Z",
+      "source": "Google AI",
+      "sourceId": "google"
+    },
+    {
+      "id": "openai-%2Findex%2Fhow-openai-performance-factory-keeps-chatgpt-fast",
+      "title": "How OpenAI’s Performance Factory keeps ChatGPT fast",
+      "url": "https://openai.com/index/how-openai-performance-factory-keeps-chatgpt-fast",
+      "excerpt": "Learn how OpenAI built the Performance Factory, a system of Codex-powered workflows that finds and fixes performance issues to help keep ChatGPT fast.",
+      "publishedAt": "2026-11-19T08:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Fbusiness%2Flearn%2Fdeploying-daybreak-red",
+      "title": "Deploying Daybreak Red",
+      "url": "https://openai.com/business/learn/deploying-daybreak-red",
+      "excerpt": "Explore a reference architecture for supervised security investigations with Daybreak Red, including safety controls, setup, and monitoring.",
+      "publishedAt": "2026-11-19T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Fbusiness%2Flearn%2Fpr-scans-demo",
+      "title": "See PR scans in action",
+      "url": "https://openai.com/business/learn/pr-scans-demo",
+      "excerpt": "Watch a walkthrough of PR scans and see how the presenter reviews scan results in a pull request workflow.",
+      "publishedAt": "2026-11-19T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Fbusiness%2Flearn%2Fdaybreak-blue-onboarding-demo",
+      "title": "Get started with Daybreak Blue",
+      "url": "https://openai.com/business/learn/daybreak-blue-onboarding-demo",
+      "excerpt": "Watch a walkthrough of onboarding to Daybreak Blue, with a closer look at the setup experience and how to get started.",
+      "publishedAt": "2026-11-19T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Fbusiness%2Flearn%2Fcodex-security-plugin-demo",
+      "title": "Explore the Codex Security Plugin",
+      "url": "https://openai.com/business/learn/codex-security-plugin-demo",
+      "excerpt": "Watch a demo of the Codex Security Plugin and see the workflow in action, from getting started to reviewing the results shown in the recording.",
+      "publishedAt": "2026-11-19T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "huggingface-%2Fblog%2FRadixArk%2Fdaisyrose-27b-pushing-the-frontier-of-post-trainin",
+      "title": "DaisyRose-27B: Pushing the Frontier of Post-Training Efficiency",
+      "url": "https://huggingface.co/blog/RadixArk/daisyrose-27b-pushing-the-frontier-of-post-trainin",
+      "excerpt": "",
+      "publishedAt": "2026-11-18T19:54:56.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "huggingface-%2Fblog%2FDharma-AI%2Fpredicting-fine-tuning-time",
+      "title": "Why your fine-tuning job takes longer than the FLOPs say",
+      "url": "https://huggingface.co/blog/Dharma-AI/predicting-fine-tuning-time",
+      "excerpt": "",
+      "publishedAt": "2026-11-18T18:53:43.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "google-%2Finnovation-and-ai%2Fproducts%2Fgemini-app%2Fgemini-lower-memory-devices%2F",
+      "title": "The Gemini app is now available on lower-memory Android devices.",
+      "url": "https://blog.google/innovation-and-ai/products/gemini-app/gemini-lower-memory-devices/",
+      "excerpt": "The Google Gemini app now supports lower-memory Android devices. Access Gemini Live and custom image creation on your phone. Download the app to",
+      "publishedAt": "2026-11-18T17:00:00.000Z",
+      "source": "Google AI",
+      "sourceId": "google"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fibm-research%2Ftime-series-powered-streamhouse",
+      "title": "Time-Series Models in the Streamhouse: A New Frontier and Use Cases",
+      "url": "https://huggingface.co/blog/ibm-research/time-series-powered-streamhouse",
+      "excerpt": "",
+      "publishedAt": "2026-11-18T15:00:23.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "openai-%2Findex%2Fthe-silent-consensus",
+      "title": "The Silent Consensus",
+      "url": "https://openai.com/index/the-silent-consensus",
+      "excerpt": "Dean Ball, Head of Strategic Futures at OpenAI, examines how more capable AI could reshape society and how people can retain control of their institutions.",
+      "publishedAt": "2026-11-18T10:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Findex%2Fresearch-acceleration-jagged-frontier",
+      "title": "Research acceleration: The jagged frontier",
+      "url": "https://openai.com/index/research-acceleration-jagged-frontier",
+      "excerpt": "OpenAI measures how coding agents are accelerating AI research, where their performance remains uneven, and what this signals about recursive self-improvement.",
+      "publishedAt": "2026-11-18T08:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Fbusiness%2Fcustomer-stories%2Fsumitomo-life",
+      "title": "How Sumitomo Life’s leaders helped teams adopt ChatGPT Enterprise",
+      "url": "https://openai.com/business/customer-stories/sumitomo-life",
+      "excerpt": "Sumitomo Life uses ChatGPT Enterprise to research insurers, prepare proposals, and draft code for investment analysis. Early use by executives helped drive adoption.",
+      "publishedAt": "2026-11-18T08:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Findex%2Finside-the-codex-sandbox",
+      "title": "Inside the Codex sandbox",
+      "url": "https://openai.com/index/inside-the-codex-sandbox",
+      "excerpt": "See how Codex runs commands on your machine while enforcing the filesystem and network limits you control across macOS, Linux, and Windows.",
+      "publishedAt": "2026-11-18T08:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Findex%2Fmanaging-frontier-ai-risk",
+      "title": "Managing frontier AI risk: From training to deployment",
+      "url": "https://openai.com/index/managing-frontier-ai-risk",
+      "excerpt": "OpenAI explains how it manages frontier AI risk from training through deployment with model alignment, sandboxing, blocking safeguards, and monitoring.",
+      "publishedAt": "2026-11-18T06:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Findex%2Fadvancing-chip-design-with-our-models",
+      "title": "Advancing chip design with OpenAI models",
+      "url": "https://openai.com/index/advancing-chip-design-with-our-models",
+      "excerpt": "OpenAI models optimized circuits used in Jalapeño silicon and improved RISC‑V core designs, showing progress in AI-assisted chip design with GPT‑6 Astra.",
+      "publishedAt": "2026-11-18T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "openai-%2Findex%2Fle-groupe-figaro-and-openai-announce-partnership",
+      "title": "Le Groupe Figaro and OpenAI partner to bring Le Figaro journalism to ChatGPT",
+      "url": "https://openai.com/index/le-groupe-figaro-and-openai-announce-partnership",
+      "excerpt": "Le Groupe Figaro and OpenAI partner to bring Le Figaro’s journalism to ChatGPT through summaries and excerpts, with links to original stories.",
+      "publishedAt": "2026-11-18T00:00:00.000Z",
+      "source": "OpenAI",
+      "sourceId": "openai"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fmoe-expert-streaming",
+      "title": "180B Parameters, 32GB of RAM: Pushing MoE Inference to the Limit with Transformers",
+      "url": "https://huggingface.co/blog/moe-expert-streaming",
+      "excerpt": "",
+      "publishedAt": "2026-11-18T00:00:00.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Frumble-2-flash",
+      "title": "Rumble-2-Flash: an open 0.5B speech model for 40+ languages",
+      "url": "https://huggingface.co/blog/rumble-2-flash",
+      "excerpt": "",
+      "publishedAt": "2026-11-18T00:00:00.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "google-%2Finnovation-and-ai%2Fproducts%2Fgemini-app%2Ftasks-in-gemini-free-new-features%2F",
+      "title": "Put Gemini to work for you",
+      "url": "https://blog.google/innovation-and-ai/products/gemini-app/tasks-in-gemini-free-new-features/",
+      "excerpt": "Tasks in Gemini is now free of charge in six countries, with new features starting in the U.S. and deeper Google Workspace integration to get things done on yo",
+      "publishedAt": "2026-11-17T17:00:00.000Z",
+      "source": "Google AI",
+      "sourceId": "google"
+    },
+    {
+      "id": "google-%2Fproducts-and-platforms%2Fproducts%2Fmaps%2Fask-maps-holiday-travel-features-2026%2F",
+      "title": "New Ask Maps features to help with holiday travel and prep",
+      "url": "https://blog.google/products-and-platforms/products/maps/ask-maps-holiday-travel-features-2026/",
+      "excerpt": "Plan holiday road trips, get route tips, find local appointments, and search your saved lists with new Ask Maps features.",
+      "publishedAt": "2026-11-16T14:00:00.000Z",
+      "source": "Google AI",
+      "sourceId": "google"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fopenrouter",
+      "title": "Hugging Face and OpenRouter join forces to make open-weight models easy to run",
+      "url": "https://huggingface.co/blog/openrouter",
+      "excerpt": "",
+      "publishedAt": "2026-11-16T00:00:00.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fnvidia%2Fsimready-assets-robot-pick-and-place",
+      "title": "Build a Robot Pick-and-Place Simulation with SimReady Assets",
+      "url": "https://huggingface.co/blog/nvidia/simready-assets-robot-pick-and-place",
+      "excerpt": "",
+      "publishedAt": "2026-11-13T18:00:39.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fallenai%2Fxybench",
+      "title": "XYBench: Helping with the problem behind the question",
+      "url": "https://huggingface.co/blog/allenai/xybench",
+      "excerpt": "",
+      "publishedAt": "2026-11-13T17:02:35.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fggml-org%2Fllama-cpp-v1",
+      "title": "llama.cpp v1.0.0 : A stronger foundation for the local AI ecosystem",
+      "url": "https://huggingface.co/blog/ggml-org/llama-cpp-v1",
+      "excerpt": "",
+      "publishedAt": "2026-11-13T14:05:22.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "huggingface-%2Fblog%2Fibm-granite%2Fllmon-an-llm-native-markup-language-now-in-granite",
+      "title": "LLMON: An LLM-Native Markup Language, now in Granite 4.1 3B and 8B",
+      "url": "https://huggingface.co/blog/ibm-granite/llmon-an-llm-native-markup-language-now-in-granite",
+      "excerpt": "",
+      "publishedAt": "2026-11-12T19:07:35.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "google-%2Fproducts-and-platforms%2Fproducts%2Fsearch%2Fgemini-4-hydrogen-search-upgrade%2F",
+      "title": "Google Search gets a major upgrade with Gemini 4 Hydrogen",
+      "url": "https://blog.google/products-and-platforms/products/search/gemini-4-hydrogen-search-upgrade/",
+      "excerpt": "We are bringing Gemini 4 Hydrogen to Google Search globally to provide you with more helpful, visual, and intuitive responses.",
+      "publishedAt": "2026-11-12T18:00:00.000Z",
+      "source": "Google AI",
+      "sourceId": "google"
+    },
+    {
+      "id": "huggingface-%2Fblog%2F3d-lora-finetuning",
+      "title": "The Definitive Fine-Tuning Guide for 3D Generation Models",
+      "url": "https://huggingface.co/blog/3d-lora-finetuning",
+      "excerpt": "",
+      "publishedAt": "2026-11-12T00:00:00.000Z",
+      "source": "Hugging Face",
+      "sourceId": "huggingface"
+    },
+    {
+      "id": "google-%2Finnovation-and-ai%2Ftechnology%2Fdevelopers-tools%2Fgemini-decisions-api%2F",
+      "title": "Gemini Decisions API: Fast, calibrated multimodal decisions",
+      "url": "https://blog.google/innovation-and-ai/technology/developers-tools/gemini-decisions-api/",
+      "excerpt": "Meet the Gemini Decisions API, powered by our state-of-the-art model Gemini Decision for fast, calibrated multimodal decisions.",
+      "publishedAt": "2026-11-11T18:00:00.000Z",
+      "source": "Google AI",
+      "sourceId": "google"
+    }
+  ]
+}

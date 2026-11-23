@@ -3,7 +3,7 @@ begin;
 
 create table if not exists public.luma_user_data (
   user_id uuid not null references auth.users(id) on delete cascade,
-  key text not null check (key in ('saved','liked','notes','custom','rsvp')),
+  key text not null check (key in ('saved','liked','notes','custom','rsvp','library')),
   value jsonb not null default '[]'::jsonb check (jsonb_typeof(value) = 'array'),
   updated_at timestamptz not null default now(),
   primary key (user_id,key)
@@ -57,4 +57,28 @@ create trigger luma_posts_updated_at before update on public.luma_posts
   for each row execute function public.luma_touch_updated_at();
 create trigger luma_library_updated_at before update on public.luma_user_data
   for each row execute function public.luma_touch_updated_at();
+insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types)
+values ('post-images','post-images',false,2097152,array['image/webp','image/png','image/jpeg'])
+on conflict (id) do nothing;
+
+create policy "AIQS upload own article images" on storage.objects
+for insert to authenticated with check (
+  bucket_id='post-images' and (storage.foldername(name))[1]=(select auth.uid()::text)
+);
+create policy "AIQS read own or published article images" on storage.objects
+for select to anon,authenticated using (
+  bucket_id='post-images' and (
+    (storage.foldername(name))[1]=(select auth.uid()::text)
+    or exists (
+      select 1 from public.luma_posts p
+      where p.status='published'
+        and p.author_id::text=(storage.foldername(storage.objects.name))[1]
+        and position('supabase-image:'||storage.objects.name in p.body)>0
+    )
+  )
+);
+create policy "AIQS delete own article images" on storage.objects
+for delete to authenticated using (
+  bucket_id='post-images' and (storage.foldername(name))[1]=(select auth.uid()::text)
+);
 commit;
