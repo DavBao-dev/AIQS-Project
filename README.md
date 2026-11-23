@@ -1,4 +1,4 @@
-# Luma
+# AIQS Project
 
 Website tĩnh cho feed Seminar, Video Summary và News. Mở `dist/index.html` bằng máy chủ HTTP để dùng đầy đủ tính năng clipboard và liên kết.
 

@@ -1,4 +1,4 @@
-# Kết nối Supabase cho Luma
+# Kết nối Supabase cho AIQS Project
 
 Mã đăng ký, đăng nhập, khôi phục mật khẩu, đồng bộ dữ liệu và đăng bài đã có sẵn. Chưa có project/key nên hiện tại website chạy chế độ khách; chưa có tài khoản hoặc database thật được tạo.
 
