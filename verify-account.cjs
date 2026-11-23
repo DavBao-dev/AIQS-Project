@@ -50,8 +50,16 @@ let writes = [],
   rows = [],
   postPayload = null,
   failWrites = false,
-  pendingPost = null;
+  pendingPost = null,
+  adminMock = false;
+const profiles = new Map();
 const fakeSupa = {
+  rpc(name) {
+    return Promise.resolve({
+      data: name === "luma_is_admin" && adminMock,
+      error: null,
+    });
+  },
   from(table) {
     const q = {
       select() {
@@ -67,6 +75,10 @@ const fakeSupa = {
         return Promise.resolve({ data: posts, error: null });
       },
       upsert(data) {
+        if (table === "luma_profiles") {
+          profiles.set(data.user_id, data.display_name);
+          return Promise.resolve({ error: null });
+        }
         writes.push(data);
         return Promise.resolve({
           error: failWrites ? new Error("offline") : null,
@@ -82,10 +94,16 @@ const fakeSupa = {
       },
       single() {
         if (pendingPost) return pendingPost;
+        // Mirrors the luma_posts_guard trigger: server-set name, date and status.
         return Promise.resolve({
           data: {
             id: "00000000-0000-0000-0000-000000000099",
             ...postPayload,
+            status:
+              postPayload.status === "published" && !adminMock
+                ? "pending"
+                : postPayload.status,
+            author_name: profiles.get(postPayload.author_id) || "",
             created_at: "2026-11-23T00:00:00Z",
           },
           error: null,
@@ -173,6 +191,30 @@ run("supa=fakeSupa");
   await run("savePost('published')");
   assert.equal(postPayload.author_id, "user-b");
   assert.equal(postPayload.status, "published");
+  // The client never sends fields the database owns.
+  assert.equal("author_name" in postPayload, false);
+  assert.equal("created_at" in postPayload, false);
+  assert.equal(profiles.get("user-b"), "b");
+  // A non-admin post waits for review and stays off the feed.
+  assert.equal(run("postRows[0].status"), "pending");
+  assert.equal(run("communityItems.length"), 0);
+  assert.notEqual(run("state.view"), "reader");
+  assert.ok(node("#posts-dialog").innerHTML.includes("Chờ duyệt"));
+  assert.ok(!node("#posts-dialog").innerHTML.includes("Bài chờ duyệt"));
+  // Admins publish directly and see the review queue.
+  adminMock = true;
+  await run(
+    "refreshSession({id:'user-b',email:'b@example.com',user_metadata:{}},true)",
+  );
+  assert.equal(run("isAdmin"), true);
+  run(
+    "postRows=[{id:'queued',author_id:'user-z',author_name:'<b>Z</b>',title:'Queued',summary:'S',body:'B',type:'Seminar',topic:topics[0],source_url:'',tags:[],status:'pending',created_at:'2026-11-23T00:00:00Z'}];rebuildItems();showMyPosts()",
+  );
+  assert.equal(run("communityItems.length"), 0);
+  assert.ok(node("#posts-dialog").innerHTML.includes('data-approve="queued"'));
+  assert.ok(node("#posts-dialog").innerHTML.includes("&lt;b&gt;Z"));
+  run("postRows=[]");
+  await run("savePost('published')");
   assert.equal(run("state.view"), "reader");
   assert.equal(run("communityItems.length"), 1);
   run("postRows.push({...postRows[0],id:'foreign',author_id:'user-a'})");
@@ -181,8 +223,10 @@ run("supa=fakeSupa");
     run("!!isOwnPost('post-00000000-0000-0000-0000-000000000099')"),
     true,
   );
+  adminMock = false;
   await run("refreshSession(null,true)");
   assert.equal(run("account.user"), null);
+  assert.equal(run("isAdmin"), false);
   assert.equal(run("notes.length"), 0);
   assert.equal(run("draftKey()"), "luma-writer-guest");
   assert.equal(
@@ -214,6 +258,8 @@ run("supa=fakeSupa");
   // into the new actor's local draft.
   let rejectPost;
   pendingPost = new Promise((_, reject) => (rejectPost = reject));
+  // The save may stop at the session check before it reaches the query.
+  pendingPost.catch(() => {});
   const oldSave = run("savePost('published')");
   await run("refreshSession(null,true)");
   storage.set("luma-writer-guest", "guest draft stays private");
@@ -222,7 +268,7 @@ run("supa=fakeSupa");
   assert.equal(storage.get("luma-writer-guest"), "guest draft stays private");
   pendingPost = null;
   console.log(
-    "Account checks passed: hydration, owner-bound sync, failed-write recovery, account isolation, post creation, library state, escaping and stale-save draft isolation. Mock tests; live Supabase/RLS still needs project configuration.",
+    "Account checks passed: hydration, owner-bound sync, failed-write recovery, account isolation, post creation, moderation queue, server-owned post fields, library state, escaping and stale-save draft isolation. Mock tests; live Supabase/RLS still needs project configuration.",
   );
 })().catch((e) => {
   console.error(e);

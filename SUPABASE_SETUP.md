@@ -3,18 +3,36 @@
 Mã đăng ký, đăng nhập, khôi phục mật khẩu, đồng bộ dữ liệu và đăng bài đã có sẵn. Chưa có project/key nên hiện tại website chạy chế độ khách; chưa có tài khoản hoặc database thật được tạo.
 
 1. Vào https://supabase.com/dashboard và tạo project trong organization của bạn. Chọn region gần Việt Nam (ví dụ Singapore). Lưu mật khẩu database trong trình quản lý mật khẩu của bạn.
-2. Mở **SQL Editor → New query**, dán toàn bộ `supabase/schema.sql` rồi Run. Chạy một lần; migration dùng transaction và sẽ rollback nếu có lỗi. Khi cần chạy lại sau lần thành công, dùng migration mới thay vì chạy lại phần create policy/trigger.
+2. Mở **SQL Editor → New query**, dán toàn bộ `supabase/schema.sql` rồi Run. Mỗi phần chạy trong transaction và rollback nếu có lỗi; file có thể chạy lại an toàn. Project đã chạy schema cũ thì chạy lần lượt các file trong `supabase/migrations/` còn thiếu, ví dụ `004_moderation_and_trust.sql`.
 3. Trong Project Settings / Connect, lấy **Project URL** và **publishable key** (`sb_publishable_...`) hoặc legacy **anon key**. Không dùng secret key hoặc service_role key.
-4. Điền hai giá trị công khai này vào `dist/config.js` hoặc gửi chúng cho Codex để kết nối và triển khai lại.
+4. Điền hai giá trị công khai này vào `dist/config.js` hoặc gửi chúng cho người phụ trách kỹ thuật của dự án để kết nối và triển khai lại.
 5. Trong **Authentication → Providers → Email**, bật email/password và bật xác nhận email. Trong **Authentication → URL Configuration**, đặt Site URL và Redirect URLs thành origin thực của website, có dấu `/` ở cuối khi ứng dụng nằm ở root. Với localhost có thể thêm `http://localhost:4173/`. Thêm domain riêng nếu dùng.
 6. Cấu hình SMTP cho email xác nhận/reset khi sử dụng thực tế, kiểm tra giới hạn gửi của project, rồi đăng ký một tài khoản bằng email bạn kiểm soát.
 
-Website được Sites triển khai ở chế độ riêng tư. Tài khoản Supabase là lớp tài khoản trong ứng dụng, không thay đổi quyền truy cập của hosting. Nếu muốn ai cũng vào đăng ký được, chủ website cần yêu cầu công khai website.
+7. Chỉ định quản trị viên (BĐH) được duyệt bài: lấy UUID trong **Authentication → Users**, rồi chạy trong SQL Editor:
+
+   ```sql
+   insert into public.luma_admins (user_id) values ('<uuid của tài khoản>');
+   ```
+
+   Gỡ quyền bằng `delete from public.luma_admins where user_id = '<uuid>';`. Không có giao diện để tự cấp quyền admin.
+
+Website trên https://aiqs-project.pages.dev/ là công khai: ai có link cũng xem được feed và tự đăng ký tài khoản. Tài khoản Supabase là lớp tài khoản trong ứng dụng, không thay đổi quyền truy cập của hosting.
+
+## Duyệt bài
+
+- Người dùng thường bấm **Gửi duyệt**: bài vào trạng thái `pending`, chỉ tác giả và admin nhìn thấy. Admin mở **Bài viết & bản nháp → Bài chờ duyệt** để đọc nội dung gốc, rồi **Duyệt** (lên feed) hoặc **Trả về bản nháp**.
+- Sửa tiêu đề, tóm tắt, nội dung, nguồn hoặc tags của bài đã đăng sẽ đưa bài về `pending`, để bài không bị đổi nội dung sau khi duyệt.
+- Admin có thể gỡ bài của bất kỳ ai bằng nút **Gỡ bài (BĐH)** trong trang đọc.
+- Database tự đặt tên tác giả (từ `luma_profiles`), ngày tạo và trạng thái. Trình duyệt gửi giá trị khác cũng bị ghi đè; giao diện chỉ là lớp hiển thị.
+- Tên hiển thị là duy nhất (không phân biệt hoa thường). Người dùng đổi tên trong **Tài khoản**. Nếu tên lúc đăng ký đã có người dùng, phải đổi tên trước khi lưu bài lên tài khoản.
 
 ## Database
 
 - `luma_user_data`: thư viện, yêu thích, highlights/notes, nội dung riêng và lịch cá nhân; mỗi người chỉ đọc/ghi các dòng có `user_id = auth.uid()`.
-- `luma_posts`: bài viết có tiêu đề, tóm tắt, nội dung, chủ đề, định dạng, nguồn, tags và trạng thái `draft` / `published`. Người dùng chỉ sửa bài của mình. Bài `published` được đọc công khai qua RLS; bản `draft` chỉ tác giả đọc được.
+- `luma_posts`: bài viết có tiêu đề, tóm tắt, nội dung, chủ đề, định dạng, nguồn, tags và trạng thái `draft` / `pending` / `published`. Người dùng chỉ sửa bài của mình. Bài `published` được đọc công khai qua RLS; `draft` và `pending` chỉ tác giả và admin đọc được. Trigger `luma_posts_guard` đặt `author_name`, `created_at` và đổi `published` thành `pending` khi người gửi không phải admin.
+- `luma_profiles`: tên hiển thị công khai, mỗi tài khoản một tên, không trùng nhau.
+- `luma_admins`: danh sách admin được duyệt và gỡ bài. Chỉ thêm qua SQL Editor.
 - Xóa user trong Supabase sẽ cascade xóa dữ liệu và bài viết của user đó.
 
 ## Hành vi lưu trữ
@@ -28,10 +46,17 @@ Mỗi nhóm dữ liệu cá nhân đồng bộ theo dòng riêng; nếu cùng t�
 1. Đăng ký bằng email thật, xác nhận email, đăng nhập và đăng xuất. Kiểm tra flow quên mật khẩu và đặt lại mật khẩu trong cùng trình duyệt đã yêu cầu (PKCE).
 2. Tài khoản A lưu nội dung, tạo highlight, note và một bản nháp; đăng nhập A trên trình duyệt khác để kiểm tra dữ liệu.
 3. Đăng nhập B: không nhìn thấy dữ liệu riêng/bản nháp của A. Qua API thử ghi với `author_id`/`user_id` của A phải bị RLS từ chối.
-4. A đăng một bài: B và khách nhìn thấy trên feed; B không sửa được bài A. A sửa bài và gỡ về nháp: bài biến mất khỏi feed và vẫn có trong mục bài viết của A.
-5. Thử ngắt mạng khi lưu: kiểm tra cảnh báo đồng bộ và thử lại. Không coi test mock là bằng chứng RLS đã chạy trên project thật.
+4. A (không phải admin) gửi một bài: bài ở trạng thái **Chờ duyệt**, B và khách chưa thấy. Admin duyệt: B và khách thấy trên feed, ảnh trong bài hiển thị; B không sửa được bài A. A sửa nội dung bài đã đăng: bài về **Chờ duyệt** và rời feed. A gỡ về nháp: bài vẫn có trong mục bài viết của A.
+5. Qua API (ví dụ console trình duyệt với `supa`) bằng tài khoản B, thử các lệnh sau và kiểm tra dòng trả về:
+   - `insert` với `status: 'published'` → nhận về `pending`.
+   - `insert` với `created_at` năm 2099 → nhận về giờ hiện tại.
+   - `insert` với `author_name: 'Dav Bảo'` → nhận về tên trong hồ sơ của B.
+   - `update` bài của A → không có dòng nào thay đổi.
+   - Đổi tên B thành tên của A (khác hoa thường) → bị từ chối vì trùng.
+6. Chạy lại `supabase/schema.sql` lần nữa trên project: không lỗi.
+7. Thử ngắt mạng khi lưu: kiểm tra cảnh báo đồng bộ và thử lại. Không coi test mock là bằng chứng RLS đã chạy trên project thật.
 
-SDK `@supabase/supabase-js@2.119.2` tải từ esm.sh; frontend cần truy cập CDN và endpoint của project. Auth dùng Supabase SDK để lưu/refresh session, không tự lưu mật khẩu. RLS mới là ranh giới bảo vệ dữ liệu; không bỏ qua bước chạy SQL.
+SDK `@supabase/supabase-js@2.119.2` được lưu cục bộ tại `dist/vendor/supabase/` (kiểm tra SHA-512 bởi `tools/vendor-rich.py`); frontend chỉ cần truy cập endpoint của project. CSP trong `dist/_headers` cho phép kết nối tới `*.supabase.co`; nếu dùng custom domain cho Supabase thì thêm domain đó vào `connect-src`. Auth dùng Supabase SDK để lưu/refresh session, không tự lưu mật khẩu. RLS mới là ranh giới bảo vệ dữ liệu; không bỏ qua bước chạy SQL.
 
 ## Ảnh trong bài viết
 

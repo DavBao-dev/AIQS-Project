@@ -1,0 +1,8 @@
+# Cloudflare Pages static headers. /api/news is served by _worker.js and sets its own.
+# style-src needs 'unsafe-inline' because KaTeX writes inline style attributes.
+# img-src allows any HTTPS host because articles may embed image URLs.
+/*
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; font-src 'self'; connect-src 'self' https://*.supabase.co wss://*.supabase.co; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
