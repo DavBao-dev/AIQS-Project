@@ -3,7 +3,8 @@ from pathlib import Path
 import urllib.request, json, tarfile, io, hashlib, base64
 from concurrent.futures import ThreadPoolExecutor
 
-PACKAGES={'katex':'0.19.1','marked':'18.2.1','dompurify':'3.5.0'}
+PACKAGES={'katex':'0.19.1','marked':'18.2.1','dompurify':'3.5.0','@supabase/supabase-js':'2.119.2'}
+FOLDERS={'@supabase/supabase-js':'supabase'}
 ROOT=Path(__file__).resolve().parents[1]/'dist'/'vendor'
 
 def download(package):
@@ -12,7 +13,7 @@ def download(package):
     with urllib.request.urlopen(meta['dist']['tarball'],timeout=60) as r:archive=r.read()
     algorithm,expected=meta['dist']['integrity'].split('-',1)
     if algorithm!='sha512' or base64.b64encode(hashlib.sha512(archive).digest()).decode()!=expected:raise RuntimeError('Integrity mismatch: '+name)
-    dest=ROOT/name;dest.mkdir(parents=True,exist_ok=True)
+    dest=ROOT/FOLDERS.get(name,name);dest.mkdir(parents=True,exist_ok=True)
     names=[]
     with tarfile.open(fileobj=io.BytesIO(archive),mode='r:gz') as bundle:
         for member in bundle.getmembers():
@@ -23,6 +24,7 @@ def download(package):
             elif name=='katex' and short.startswith('dist/fonts/') and short.endswith('.woff2'):output='fonts/'+Path(short).name
             elif name=='marked' and short=='lib/marked.umd.js':output='marked.umd.js'
             elif name=='dompurify' and short=='dist/purify.min.js':output='purify.min.js'
+            elif name=='@supabase/supabase-js' and short=='dist/umd/supabase.js':output='supabase.js'
             elif Path(short).name in ('LICENSE','LICENSE-MPL','LICENSE.md') and '/' not in short:output=Path(short).name
             if output:
                 target=dest/output;target.parent.mkdir(parents=True,exist_ok=True);target.write_bytes(bundle.extractfile(member).read());names.append(output)

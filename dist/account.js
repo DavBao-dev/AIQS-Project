@@ -7,7 +7,14 @@ let supa = null,
   pendingWrites = new Map(),
   postRows = [],
   editorId = null,
-  editorDirty = false;
+  editorDirty = false,
+  isAdmin = false,
+  profileError = "";
+const statusLabels = {
+  published: "Đã đăng",
+  pending: "Chờ duyệt",
+  draft: "Bản nháp",
+};
 const dataKeys = ["saved", "liked", "notes", "custom", "rsvp", "library"];
 const ui = document.createElement("div");
 ui.id = "account-ui";
@@ -23,6 +30,25 @@ function accountName() {
     account.user?.email?.split("@")[0] ||
     "Bạn"
   );
+}
+// The database takes the author name from luma_profiles, never from the post payload.
+async function ensureProfile(name = accountName()) {
+  const display_name = String(name).trim().slice(0, 80);
+  const { error } = await supa
+    .from("luma_profiles")
+    .upsert(
+      { user_id: account.user.id, display_name },
+      { onConflict: "user_id" },
+    );
+  if (error) {
+    profileError =
+      error.code === "23505"
+        ? `Tên hiển thị “${display_name}” đã có người dùng. Đổi tên trong mục Tài khoản.`
+        : "Chưa lưu được hồ sơ tác giả. Vui lòng thử lại.";
+    return false;
+  }
+  profileError = "";
+  return true;
 }
 function decorateAccount() {
   const top = document.querySelector(".topright");
@@ -69,10 +95,32 @@ function showAuth(mode = "login") {
   authDialog.innerHTML = "";
   const configured = !!supa;
   if (account.user && mode !== "recovery") {
-    authDialog.innerHTML = `<div class="modal-head"><h2>Tài khoản của bạn</h2><button class="icon" data-close>✕</button></div><p>${esc(accountName())}<br>${esc(account.user.email)}</p><p role="status">${esc(cloudStatus || "Thư viện, highlights và ghi chú được lưu trong tài khoản.")}</p><div class="auth-actions"><button class="primary" id="manage-posts">Bài viết của tôi</button><button class="chip" id="logout">Đăng xuất</button></div><p id="auth-message" role="status"></p>`;
+    authDialog.innerHTML = `<div class="modal-head"><h2>Tài khoản của bạn</h2><button class="icon" data-close>✕</button></div><p>${esc(accountName())}<br>${esc(account.user.email)}</p><p role="status">${esc(cloudStatus || "Thư viện, highlights và ghi chú được lưu trong tài khoản.")}</p><form id="profile-form" class="profile-form"><label>Tên hiển thị trên bài viết<input name="name" required maxlength="80" autocomplete="nickname" value="${esc(accountName())}"></label><button class="chip" type="submit">Lưu tên</button></form><div class="auth-actions"><button class="primary" id="manage-posts">Bài viết của tôi</button><button class="chip" id="logout">Đăng xuất</button></div><p id="auth-message" role="status"></p>`;
     authDialog.querySelector("#manage-posts").onclick = () => {
       authDialog.close();
       showMyPosts();
+    };
+    if (profileError) authMessage(profileError);
+    authDialog.querySelector("#profile-form").onsubmit = async (e) => {
+      e.preventDefault();
+      const button = e.target.querySelector("[type=submit]"),
+        name = String(new FormData(e.target).get("name") || "").trim();
+      if (!name) return;
+      button.disabled = true;
+      authMessage("Đang lưu tên…");
+      try {
+        // Claim the name first: the unique index decides whether it is free.
+        if (!(await ensureProfile(name))) throw new Error(profileError);
+        const { error } = await supa.auth.updateUser({
+          data: { display_name: name },
+        });
+        if (error) throw error;
+        authMessage("Đã lưu tên hiển thị.");
+      } catch (err) {
+        authMessage(err.message || "Chưa lưu được tên. Vui lòng thử lại.");
+      } finally {
+        button.disabled = false;
+      }
     };
     authDialog.querySelector("#logout").onclick = async (e) => {
       e.target.disabled = true;
@@ -250,6 +298,12 @@ function setupPostReader() {
     edit.textContent = "Chỉnh sửa bài";
     edit.onclick = () => showWriter(isOwnPost(x.id));
     document.querySelector(".reader-toolbar").append(edit);
+  } else if (isAdmin) {
+    const takeDown = document.createElement("button");
+    takeDown.textContent = "Gỡ bài (BĐH)";
+    takeDown.onclick = () =>
+      changeStatus(takeDown, x.postId, "draft", "Đã gỡ bài khỏi feed.");
+    document.querySelector(".reader-toolbar").append(takeDown);
   }
 }
 const originalRender = render;
@@ -275,6 +329,8 @@ async function refreshSession(user, force = false) {
   writerDialog.close();
   postsDialog.close();
   pendingWrites.clear();
+  isAdmin = false;
+  profileError = "";
   account.user = user;
   account.ready = false;
   account.loading = !!user;
@@ -299,18 +355,26 @@ async function refreshSession(user, force = false) {
     return;
   }
   try {
-    const [rows, posts] = await Promise.all([
+    const [rows, posts, admin] = await Promise.all([
       supa.from("luma_user_data").select("key,value").eq("user_id", user.id),
       readPosts(),
+      // Only changes which buttons are shown; RLS still checks every write.
+      supa.rpc("luma_is_admin").then(
+        (r) => !r.error && r.data === true,
+        () => false,
+      ),
     ]);
     if (generation !== sessionGeneration) return;
     if (rows.error) throw rows.error;
     postRows = posts;
+    isAdmin = admin;
     applyUserData(
       Object.fromEntries((rows.data || []).map((r) => [r.key, r.value])),
     );
     account.ready = true;
     cloudStatus = "Đã đồng bộ";
+    await ensureProfile().catch(() => false);
+    if (generation !== sessionGeneration) return;
   } catch (err) {
     if (generation !== sessionGeneration) return;
     cloudStatus = "Chưa tải được dữ liệu. Vui lòng thử lại.";
@@ -428,7 +492,7 @@ function showWriter(row = null) {
   editorId = row?.id || null;
   editorDirty = false;
   const draft = row || readDraft() || {};
-  writerDialog.innerHTML = `<form id="writer-form"><div class="modal-head"><div><span class="eyebrow">CHIA SẺ MỘT GÓC NHÌN</span><h2>${row ? "Chỉnh sửa bài viết" : "Ý tưởng của bạn xứng đáng được đọc."}</h2></div><button type="button" class="icon" id="close-writer" aria-label="Đóng trình soạn thảo">✕</button></div><p>Tóm tắt một video, ghi lại một seminar, hoặc viết góc nhìn của riêng bạn.</p><div class="writer-tabs"><button type="button" class="chip active" id="write-tab">Viết</button><button type="button" class="chip" id="preview-tab">Xem trước</button><span id="word-count"></span></div><div id="write-fields"><label>Tiêu đề<input name="title" required maxlength="180" placeholder="Đặt tên cho góc nhìn của bạn" value="${esc(draft.title || "")}"></label><div class="form-row"><label>Định dạng<select name="type">${["Seminar", "Video", "News"].map((t) => `<option ${draft.type === t ? "selected" : ""}>${t}</option>`).join("")}</select></label><label>Chủ đề<select name="topic">${topics.map((t) => `<option ${draft.topic === t ? "selected" : ""}>${t}</option>`).join("")}</select></label></div><label>Tóm tắt ngắn<textarea name="summary" required maxlength="600" rows="2" placeholder="Người đọc sẽ thấy đoạn này trên feed.">${esc(draft.summary || "")}</textarea></label><label>Nội dung<textarea name="body" class="article-input" required maxlength="60000" placeholder="Bắt đầu từ một ý tưởng...&#10;&#10;Dùng ## Tiêu đề để tạo các mục trong bài viết.">${esc(draft.body || "")}</textarea></label><div class="form-row"><label>Đường dẫn nguồn (nếu có)<input type="url" name="url" placeholder="https://..." value="${esc(draft.source_url || "")}"></label><label>Tags, ngăn cách bằng dấu phẩy<input name="tags" maxlength="300" placeholder="World Models, Learning" value="${esc((draft.tags || []).join(", "))}"></label></div></div><div id="article-preview" class="article-preview" hidden></div><p id="writer-message" role="status" aria-live="polite"></p><div class="writer-footer"><span>${account.user ? "Tác giả: " + esc(accountName()) : "Bản nháp lưu riêng trên thiết bị. Đăng nhập để đăng bài."}</span><button type="button" class="chip" id="save-draft">Lưu bản nháp</button><button type="submit" class="primary">${row?.status === "published" ? "Cập nhật bài đăng" : "Đăng lên feed"}</button></div></form>`;
+  writerDialog.innerHTML = `<form id="writer-form"><div class="modal-head"><div><span class="eyebrow">CHIA SẺ MỘT GÓC NHÌN</span><h2>${row ? "Chỉnh sửa bài viết" : "Ý tưởng của bạn xứng đáng được đọc."}</h2></div><button type="button" class="icon" id="close-writer" aria-label="Đóng trình soạn thảo">✕</button></div><p>Tóm tắt một video, ghi lại một seminar, hoặc viết góc nhìn của riêng bạn.</p><div class="writer-tabs"><button type="button" class="chip active" id="write-tab">Viết</button><button type="button" class="chip" id="preview-tab">Xem trước</button><span id="word-count"></span></div><div id="write-fields"><label>Tiêu đề<input name="title" required maxlength="180" placeholder="Đặt tên cho góc nhìn của bạn" value="${esc(draft.title || "")}"></label><div class="form-row"><label>Định dạng<select name="type">${["Seminar", "Video", "News"].map((t) => `<option ${draft.type === t ? "selected" : ""}>${t}</option>`).join("")}</select></label><label>Chủ đề<select name="topic">${topics.map((t) => `<option ${draft.topic === t ? "selected" : ""}>${t}</option>`).join("")}</select></label></div><label>Tóm tắt ngắn<textarea name="summary" required maxlength="600" rows="2" placeholder="Người đọc sẽ thấy đoạn này trên feed.">${esc(draft.summary || "")}</textarea></label><label>Nội dung<textarea name="body" class="article-input" required maxlength="60000" placeholder="Bắt đầu từ một ý tưởng...&#10;&#10;Dùng ## Tiêu đề để tạo các mục trong bài viết.">${esc(draft.body || "")}</textarea></label><div class="form-row"><label>Đường dẫn nguồn (nếu có)<input type="url" name="url" placeholder="https://..." value="${esc(draft.source_url || "")}"></label><label>Tags, ngăn cách bằng dấu phẩy<input name="tags" maxlength="300" placeholder="World Models, Learning" value="${esc((draft.tags || []).join(", "))}"></label></div></div><div id="article-preview" class="article-preview" hidden></div><p id="writer-message" role="status" aria-live="polite"></p><div class="writer-footer"><span>${account.user ? "Tác giả: " + esc(accountName()) + (isAdmin ? "" : " · Bài lên feed sau khi BĐH duyệt.") : "Bản nháp lưu riêng trên thiết bị. Đăng nhập để đăng bài."}</span><button type="button" class="chip" id="save-draft">Lưu bản nháp</button><button type="submit" class="primary">${isAdmin ? (row?.status === "published" ? "Cập nhật bài đăng" : "Đăng lên feed") : row?.status === "published" ? "Gửi duyệt bản sửa" : "Gửi duyệt"}</button></div></form>`;
   writerDialog.querySelector("#close-writer").onclick = () => closeWriter();
   writerDialog.oncancel = (e) => {
     if (editorDirty) {
@@ -518,12 +582,15 @@ async function savePost(status) {
   buttons.forEach((b) => (b.disabled = true));
   message.textContent = "Đang lưu…";
   try {
-    const payload = {
-      ...d,
-      status,
-      author_id: actor,
-      author_name: accountName().slice(0, 80),
-    };
+    if (!(await ensureProfile())) {
+      if (generation !== sessionGeneration) return;
+      message.textContent = profileError;
+      storeDraft(d);
+      return;
+    }
+    if (generation !== sessionGeneration) return;
+    // author_name, created_at and the final status are set by the database.
+    const payload = { ...d, status, author_id: actor };
     let query = supa.from("luma_posts");
     query = editorId
       ? query.update(payload).eq("id", editorId).eq("author_id", actor)
@@ -537,9 +604,13 @@ async function savePost(status) {
     editorDirty = false;
     localStorage.removeItem(draftKey());
     writerDialog.close();
-    if (status === "published") {
+    if (data.status === "published") {
       openItem("post-" + data.id);
       toast("Bài viết đã được đăng lên feed");
+    } else if (data.status === "pending") {
+      render();
+      toast("Đã gửi bài. Bài sẽ lên feed sau khi BĐH duyệt.");
+      showMyPosts();
     } else {
       render();
       toast("Đã lưu bản nháp trong tài khoản");
@@ -558,10 +629,38 @@ async function savePost(status) {
     buttons.forEach((b) => (b.disabled = false));
   }
 }
+// Authors move their own posts back to draft; admins (RLS "Moderate posts") can change any post.
+async function changeStatus(button, id, status, done) {
+  button.disabled = true;
+  const generation = sessionGeneration;
+  try {
+    let query = supa.from("luma_posts").update({ status }).eq("id", id);
+    if (!isAdmin) query = query.eq("author_id", account.user.id);
+    const { data, error } = await query.select().single();
+    if (error) throw error;
+    if (generation !== sessionGeneration) return;
+    postRows = postRows.map((p) => (p.id === data.id ? data : p));
+    rebuildItems();
+    if (state.id === "post-" + data.id && data.status !== "published")
+      go("feed");
+    else render();
+    if (postsDialog.open) showMyPosts();
+    toast(done);
+  } catch {
+    toast("Chưa cập nhật được bài. Hãy thử lại.");
+    button.disabled = false;
+  }
+}
 function showMyPosts() {
   const mine = postRows.filter((p) => p.author_id === account.user?.id);
+  const queue = isAdmin ? postRows.filter((p) => p.status === "pending") : [];
   const local = readDraft();
-  postsDialog.innerHTML = `<div class="modal-head"><h2>Bài viết & bản nháp</h2><button class="icon" id="close-posts" aria-label="Đóng">✕</button></div><p>${account.user ? "Quản lý bài đăng và những ý tưởng còn đang viết." : "Đăng nhập để lưu bản nháp trong tài khoản và đăng lên feed."}</p><button class="primary" id="new-post">Viết bài mới</button>${local ? `<div class="post-management"><span class="tag">Bản trên thiết bị</span><h3>${esc(local.title || "Bản nháp chưa có tên")}</h3><button class="chip" id="local-draft">Tiếp tục viết</button></div>` : ""}${mine.map((p) => `<div class="post-management"><span class="tag">${p.status === "published" ? "Đã đăng" : "Bản nháp"}</span><h3>${esc(p.title)}</h3><button class="chip" data-edit-post="${p.id}">Chỉnh sửa</button>${p.status === "published" ? `<button class="chip" data-unpublish="${p.id}">Gỡ về bản nháp</button>` : ""}</div>`).join("")}${!mine.length && !local ? "<p>Chưa có bài viết. Bắt đầu bằng một ý tưởng nhỏ.</p>" : ""}`;
+  const review = queue.length
+    ? `<h3 class="moderation-title">Bài chờ duyệt (${queue.length})</h3>${queue.map((p) => `<div class="post-management moderation-item"><span class="tag">${esc(p.type)} · ${esc(p.topic)}</span><h3>${esc(p.title)}</h3><small>Tác giả: ${esc(p.author_name)}</small><details><summary>Xem nội dung</summary><p>${esc(p.summary)}</p>${p.source_url ? `<p>Nguồn: ${esc(p.source_url)}</p>` : ""}<pre class="moderation-body">${esc(p.body)}</pre></details><button class="primary" data-approve="${esc(p.id)}">Duyệt</button><button class="chip" data-reject="${esc(p.id)}">Trả về bản nháp</button></div>`).join("")}`
+    : isAdmin
+      ? '<p class="moderation-title">Không có bài nào chờ duyệt.</p>'
+      : "";
+  postsDialog.innerHTML = `<div class="modal-head"><h2>Bài viết & bản nháp</h2><button class="icon" id="close-posts" aria-label="Đóng">✕</button></div><p>${account.user ? "Quản lý bài đăng và những ý tưởng còn đang viết." : "Đăng nhập để lưu bản nháp trong tài khoản và đăng lên feed."}</p>${profileError ? `<p role="status">${esc(profileError)}</p>` : ""}<button class="primary" id="new-post">Viết bài mới</button>${review}${local ? `<div class="post-management"><span class="tag">Bản trên thiết bị</span><h3>${esc(local.title || "Bản nháp chưa có tên")}</h3><button class="chip" id="local-draft">Tiếp tục viết</button></div>` : ""}${mine.map((p) => `<div class="post-management"><span class="tag">${statusLabels[p.status] || "Bản nháp"}</span><h3>${esc(p.title)}</h3><button class="chip" data-edit-post="${esc(p.id)}">Chỉnh sửa</button>${p.status === "published" ? `<button class="chip" data-unpublish="${esc(p.id)}">Gỡ về bản nháp</button>` : p.status === "pending" ? `<button class="chip" data-unpublish="${esc(p.id)}">Rút về bản nháp</button>` : ""}</div>`).join("")}${!mine.length && !local ? "<p>Chưa có bài viết. Bắt đầu bằng một ý tưởng nhỏ.</p>" : ""}`;
   postsDialog.querySelector("#close-posts").onclick = () => postsDialog.close();
   postsDialog.querySelector("#new-post").onclick = () => {
     postsDialog.close();
@@ -581,30 +680,28 @@ function showMyPosts() {
   );
   postsDialog.querySelectorAll("[data-unpublish]").forEach(
     (b) =>
-      (b.onclick = async () => {
-        b.disabled = true;
-        const generation = sessionGeneration;
-        try {
-          const { data, error } = await supa
-            .from("luma_posts")
-            .update({ status: "draft" })
-            .eq("id", b.dataset.unpublish)
-            .eq("author_id", account.user.id)
-            .select()
-            .single();
-          if (error) throw error;
-          if (generation !== sessionGeneration) return;
-          postRows = postRows.map((p) => (p.id === data.id ? data : p));
-          rebuildItems();
-          if (state.id === "post-" + data.id) go("feed");
-          else render();
-          showMyPosts();
-          toast("Đã gỡ bài khỏi feed; bản nháp vẫn được giữ lại.");
-        } catch {
-          toast("Chưa gỡ được bài. Hãy thử lại.");
-          b.disabled = false;
-        }
-      }),
+      (b.onclick = () =>
+        changeStatus(
+          b,
+          b.dataset.unpublish,
+          "draft",
+          "Đã chuyển bài về bản nháp; nội dung vẫn được giữ lại.",
+        )),
+  );
+  postsDialog.querySelectorAll("[data-approve]").forEach(
+    (b) =>
+      (b.onclick = () =>
+        changeStatus(b, b.dataset.approve, "published", "Đã duyệt bài lên feed.")),
+  );
+  postsDialog.querySelectorAll("[data-reject]").forEach(
+    (b) =>
+      (b.onclick = () =>
+        changeStatus(
+          b,
+          b.dataset.reject,
+          "draft",
+          "Đã trả bài về bản nháp cho tác giả.",
+        )),
   );
   if (!postsDialog.open) postsDialog.showModal();
 }
@@ -630,10 +727,16 @@ async function initSupabase() {
         throw new Error("Only anon keys are allowed");
     }
     account.loading = true;
-    const { createClient } = await import(
-      "https://esm.sh/@supabase/supabase-js@2.119.2"
-    );
-    supa = createClient(config.url, config.publishableKey, {
+    // Served from dist/vendor (integrity-checked by tools/vendor-rich.py), not a CDN.
+    if (!window.supabase?.createClient)
+      await new Promise((resolve, reject) => {
+        const script = document.createElement("script");
+        script.src = "/vendor/supabase/supabase.js";
+        script.onload = resolve;
+        script.onerror = () => reject(new Error("Supabase SDK failed to load"));
+        document.head.append(script);
+      });
+    supa = window.supabase.createClient(config.url, config.publishableKey, {
       auth: {
         persistSession: true,
         autoRefreshToken: true,

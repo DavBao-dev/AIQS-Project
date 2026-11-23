@@ -68,6 +68,20 @@ assert.equal(run("esc('<script>')"), "&lt;script&gt;");
 assert.equal(run("readRouteId('#read/%E0%A4%A')"), null);
 assert.equal(run("readRouteId('#read/a%20b')"), "a b");
 assert.equal(run("readRouteId('#news')"), null);
+// New projects (schema.sql) and upgraded ones (migration 004) must get the same rules.
+const migration = fs.readFileSync(
+  "supabase/migrations/004_moderation_and_trust.sql",
+  "utf8",
+);
+assert.ok(
+  fs.readFileSync("supabase/schema.sql", "utf8").includes(migration),
+  "schema.sql must include migrations/004 verbatim",
+);
+// Static pages ship a CSP; the Supabase SDK is local, never a CDN import.
+const headers = fs.readFileSync("dist/_headers", "utf8");
+assert.match(headers, /Content-Security-Policy:.*script-src 'self';/);
+assert.ok(!fs.readFileSync("dist/account.js", "utf8").includes("esm.sh"));
+assert.ok(fs.existsSync("dist/vendor/supabase/supabase.js"));
 console.log(
-  "Feed checks passed: filters, search, saved library, reader/related, notes, escaping and malformed read routes.",
+  "Feed checks passed: filters, search, saved library, reader/related, notes, escaping, malformed read routes, schema/migration sync and CSP.",
 );

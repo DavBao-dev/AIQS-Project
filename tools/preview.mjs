@@ -27,6 +27,22 @@ const mime = {
   ".svg": "image/svg+xml",
   ".woff2": "font/woff2",
 };
+// Mirror the "/*" block of dist/_headers so CSP problems show up locally.
+const staticHeaders = Object.fromEntries(
+  (await readFile(path.join(root, "_headers"), "utf8").catch(() => ""))
+    .split(/\r?\n/)
+    .reduce(
+      (acc, line) => {
+        if (/^\S/.test(line)) acc.on = line.trim() === "/*";
+        else if (acc.on && line.includes(":")) {
+          const i = line.indexOf(":");
+          acc.out.push([line.slice(0, i).trim(), line.slice(i + 1).trim()]);
+        }
+        return acc;
+      },
+      { on: false, out: [] },
+    ).out,
+);
 const env = {
   ASSETS: {
     async fetch(request) {
@@ -47,6 +63,7 @@ const env = {
       try {
         return new Response(await readFile(file), {
           headers: {
+            ...staticHeaders,
             "Content-Type":
               mime[path.extname(file)] || "application/octet-stream",
           },

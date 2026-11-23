@@ -21,7 +21,7 @@ Website đã sẵn sàng dưới dạng static assets trong `dist/`, không cầ
 2. Chọn tạo ứng dụng Pages → Direct Upload / Drag and drop.
 3. Đặt tên `aiqs-project`, tải file `AIQS-Project-cloudflare.zip` hoặc thư mục `dist`, rồi chọn Deploy site.
 
-File ZIP được tạo tại `C:\Users\nhung\Documents\sites\AIQS-Project-cloudflare.zip`; bên trong có `index.html` ở thư mục gốc.
+Tạo ZIP từ nội dung bên trong `dist/` (không phải từ chính thư mục `dist`), sao cho `index.html`, `_worker.js`, `_routes.json` và `_headers` nằm ở gốc file ZIP.
 
 ## Qua Wrangler
 
