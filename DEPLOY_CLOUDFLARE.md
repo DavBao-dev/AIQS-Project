@@ -41,6 +41,6 @@ Các lần sau chỉ cần chạy lệnh `pages deploy`. Nếu tên đã đượ
 
 ## Supabase
 
-`dist/config.js` hiện chưa được cấu hình Project URL và publishable key. Bản deploy vẫn chạy chế độ khách; đăng nhập và đăng bài lên database chỉ hoạt động sau khi thực hiện `SUPABASE_SETUP.md`. Sau khi có URL Pages thật, thêm URL đó vào redirect allowlist của Supabase.
+`dist/config.js` đã được cấu hình Project URL và publishable key công khai của project `hmqnhbskwowbjjvftxvr`. Xem trạng thái kiểm tra và các bước email/redirect/moderation còn cần xác minh trong `SUPABASE_SETUP.md`.
 
 Bản nâng cấp Reading Workspace + News đã deploy thành công ngày 23/11/2026. URL News: https://aiqs-project.pages.dev/#news . API production /api/news đã trả 36 tin, cả ba nguồn phản hồi thành công, stale=false. Đã kiểm tra desktop/mobile, lưu kệ, highlight nhiều đoạn và khôi phục sau reload trên preview.

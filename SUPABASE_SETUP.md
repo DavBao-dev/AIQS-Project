@@ -6,7 +6,7 @@
 
 Project cho phép đăng ký và yêu cầu xác nhận email. Chưa kiểm thử đăng ký bằng email thật, gửi email, đăng nhập, ghi dữ liệu bằng hai tài khoản hay Storage trên project này. Quản trị viên project cần kiểm tra Site URL/redirect về `https://aiqs-project.pages.dev/`, cấu hình SMTP dùng cho người ngoài nhóm nếu chưa có, và cấp moderator theo hướng dẫn bên dưới. Không tắt xác nhận email để né cấu hình SMTP.
 
-Mã đăng ký, đăng nhập, khôi phục mật khẩu, đồng bộ dữ liệu và đăng bài đã có sẵn. Chưa có project/key nên hiện tại website chạy chế độ khách; chưa có tài khoản hoặc database thật được tạo.
+Các bước bên dưới dùng khi thiết lập project mới hoặc kiểm tra lại cấu hình. Website đã có mã đăng ký, đăng nhập, khôi phục mật khẩu, đồng bộ dữ liệu và đăng bài.
 
 1. Vào https://supabase.com/dashboard và tạo project trong organization của bạn. Chọn region gần Việt Nam (ví dụ Singapore). Lưu mật khẩu database trong trình quản lý mật khẩu của bạn.
 2. Mở **SQL Editor → New query**, dán toàn bộ `supabase/schema.sql` rồi Run. Mỗi phần chạy trong transaction và rollback nếu có lỗi; file có thể chạy lại an toàn. Project đã chạy schema cũ thì chạy lần lượt các file trong `supabase/migrations/` còn thiếu, ví dụ `004_moderation_and_trust.sql`.
