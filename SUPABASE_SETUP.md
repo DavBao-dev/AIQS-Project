@@ -1,5 +1,11 @@
 # Kết nối Supabase cho AIQS Project
 
+## Trạng thái kết nối ngày 24/11/2026
+
+Đã sử dụng project `hmqnhbskwowbjjvftxvr` từ nhánh `connect-supabase` của cộng tác viên s4dz theo lựa chọn của chủ website. `dist/config.js` chỉ chứa Project URL và publishable key công khai. API Auth settings và truy vấn bảng bài viết công khai trả HTTP 200; truy vấn dữ liệu cá nhân bằng vai trò khách bị từ chối HTTP 401 (42501), đúng với thiết kế.
+
+Project cho phép đăng ký và yêu cầu xác nhận email. Chưa kiểm thử đăng ký bằng email thật, gửi email, đăng nhập, ghi dữ liệu bằng hai tài khoản hay Storage trên project này. Quản trị viên project cần kiểm tra Site URL/redirect về `https://aiqs-project.pages.dev/`, cấu hình SMTP dùng cho người ngoài nhóm nếu chưa có, và cấp moderator theo hướng dẫn bên dưới. Không tắt xác nhận email để né cấu hình SMTP.
+
 Mã đăng ký, đăng nhập, khôi phục mật khẩu, đồng bộ dữ liệu và đăng bài đã có sẵn. Chưa có project/key nên hiện tại website chạy chế độ khách; chưa có tài khoản hoặc database thật được tạo.
 
 1. Vào https://supabase.com/dashboard và tạo project trong organization của bạn. Chọn region gần Việt Nam (ví dụ Singapore). Lưu mật khẩu database trong trình quản lý mật khẩu của bạn.
