@@ -40,6 +40,33 @@ let saved = load("saved", []),
   custom = load("custom", []),
   rsvp = load("rsvp", []);
 const account = { user: null, loading: false, ready: false, sync: null };
+// A shared link (#read/...) may point at community or news content that arrives
+// after the first paint. Until both sources have answered, show a loading state
+// instead of treating the missing item as an invalid link.
+const settled = { posts: false, news: false };
+const contentSettled = () => settled.posts && settled.news;
+function markSettled(kind) {
+  settled[kind] = true;
+  if (document.querySelector(".reader-loading")) render();
+}
+setTimeout(() => {
+  markSettled("posts");
+  markSettled("news");
+}, 20000);
+// Preserve Vietnamese combining marks and multi-code-point emoji in initials.
+const initialSegmenter =
+  typeof Intl.Segmenter === "function"
+    ? new Intl.Segmenter("vi", { granularity: "grapheme" })
+    : null;
+const initialsOf = (name, n = 2) => {
+  const text = String(name ?? "")
+    .trim()
+    .normalize("NFC");
+  const letters = initialSegmenter
+    ? Array.from(initialSegmenter.segment(text), (entry) => entry.segment)
+    : Array.from(text);
+  return letters.slice(0, n).join("").toUpperCase();
+};
 let communityItems = [];
 let newsItems = [];
 let libraryState = load("library", []);
@@ -228,6 +255,9 @@ let items = [...custom, ...seed],
     tab: "Dành cho bạn",
     id: null,
   };
+// The feed shows only the three newest news items; the News page lists the rest.
+const feedVisible = (x) =>
+  !x.isNews || newsItems.slice(0, 3).some((n) => n.id === x.id);
 if (load("theme", "dark") === "light") document.body.classList.add("light");
 function art(kind) {
   if (kind === "finance")
@@ -253,10 +283,10 @@ function shell(content, rail) {
 }
 function card(x) {
   const s = saved.includes(x.id);
-  return `<article class="feed-card"><div class="card-top"><span class="type ${x.type}">${svg(x.type === "Seminar" ? "calendar" : x.type === "Video" ? "play" : "news")}${x.type === "Video" ? "VIDEO SUMMARY" : x.type.toUpperCase()}</span><span>·</span><span>${esc(x.topic)}</span><span class="spacer"></span><span>${esc(x.date)}</span></div><button class="card-title" data-open="${x.id}">${esc(x.title)}</button><div class="byline"><span class="mini-avatar">${esc(x.initial)}</span>${esc(x.author)}<span aria-hidden="true">·</span><span>· ${esc(x.read)}</span></div><p class="description">${esc(x.desc)}</p>${x.art ? `<div class="art" role="button" tabindex="0" data-open="${x.id}" aria-label="Đọc ${esc(x.title)}">${art(x.art)}<span class="play">▶ &nbsp; Khám phá nội dung</span><span class="duration">${esc(x.duration)}</span></div>` : ""}<div class="tags">${x.tags.map((t) => `<button class="tag" data-search="${esc(t)}">${esc(t)}</button>`).join("")}</div><div class="card-footer"><button class="action ${liked.includes(x.id) ? "selected" : ""}" data-like="${x.id}" aria-label="Yêu thích">${svg("heart")}${x.likes + (liked.includes(x.id) ? 1 : 0)}</button><button class="action" data-open="${x.id}">${svg("highlight")}${notes.filter((n) => n.id === x.id).length || "Ghi chú"}</button><button class="action ${s ? "selected" : ""}" data-save="${x.id}" aria-label="${s ? "Bỏ lưu" : "Lưu"} ${esc(x.title)}">${svg("bookmark")}${s ? "Đã lưu" : "Lưu"}</button><button class="read" data-open="${x.id}">Đọc tóm tắt</button></div></article>`;
+  return `<article class="feed-card"><div class="card-top"><span class="type ${x.type}">${svg(x.type === "Seminar" ? "calendar" : x.type === "Video" ? "play" : "news")}${x.type === "Video" ? "VIDEO SUMMARY" : x.type.toUpperCase()}</span><span>·</span><span>${esc(x.topic)}</span><span class="spacer"></span><span>${esc(x.date)}</span></div><button class="card-title" data-open="${x.id}">${esc(x.title)}</button><div class="byline"><span class="mini-avatar">${esc(x.initial)}</span>${esc(x.author)}<span aria-hidden="true">·</span><span>${esc(x.read)}</span></div><p class="description">${esc(x.desc)}</p>${x.art ? `<div class="art" role="button" tabindex="0" data-open="${x.id}" aria-label="Đọc ${esc(x.title)}">${art(x.art)}<span class="play">▶ &nbsp; Khám phá nội dung</span><span class="duration">${esc(x.duration)}</span></div>` : ""}<div class="tags">${x.tags.map((t) => `<button class="tag" data-search="${esc(t)}">${esc(t)}</button>`).join("")}</div><div class="card-footer"><button class="action ${liked.includes(x.id) ? "selected" : ""}" data-like="${x.id}" aria-label="Yêu thích">${svg("heart")}${x.likes + (liked.includes(x.id) ? 1 : 0)}</button><button class="action" data-open="${x.id}">${svg("highlight")}${notes.filter((n) => n.id === x.id).length || "Ghi chú"}</button><button class="action ${s ? "selected" : ""}" data-save="${x.id}" aria-label="${s ? "Bỏ lưu" : "Lưu"} ${esc(x.title)}">${svg("bookmark")}${s ? "Đã lưu" : "Lưu"}</button><button class="read" data-open="${x.id}">Đọc tóm tắt</button></div></article>`;
 }
 function rightRail() {
-  return `<div class="edition"><span>YOUR DAILY DOSE OF CURIOSITY</span><span>✧</span></div><section class="feature"><div class="eyebrow">BỘ SƯU TẬP NỔI BẬT</div><h3>Hiểu AI.<br>Hiểu tương lai.</h3><p>Những ý tưởng lớn, từ nền tảng đến biên giới mới của trí tuệ nhân tạo.</p><button data-topic="${topics[0]}">Khám phá bộ sưu tập</button></section><section class="rail-section"><div class="rail-head"><h3>Seminar sắp tới</h3><button data-view="events">Xem lịch</button></div>${eventsMarkup(true)}</section><section class="rail-section"><div class="rail-head"><h3>Đi theo sự tò mò</h3></div>${topics.map((t, i) => `<button class="topic-row" data-topic="${t}" style="width:100%"><span class="dot" style="background:${["#b2c7a4", "#d3b88d", "#b8a5cf", "#a4b9ce"][i]}"></span><span>${t}</span><small>${items.filter((x) => x.topic === t).length}</small></button>`).join("")}</section><div class="newsletter"><h3>Ít nhiễu hơn. Nhiều góc nhìn hơn.</h3><p>Mỗi ý tưởng đáng nhớ đều xứng đáng có một chỗ trong thư viện của bạn.</p><button data-view="saved">Mở thư viện của tôi</button></div><div class="rail-foot">AIQS Project · A space for curious minds.<br>Bản mẫu tương tác · Nội dung minh họa</div>`;
+  return `<div class="edition"><span>YOUR DAILY DOSE OF CURIOSITY</span><span>✧</span></div><section class="feature"><div class="eyebrow">BỘ SƯU TẬP NỔI BẬT</div><h3>Hiểu AI.<br>Hiểu tương lai.</h3><p>Những ý tưởng lớn, từ nền tảng đến biên giới mới của trí tuệ nhân tạo.</p><button data-topic="${topics[0]}">Khám phá bộ sưu tập</button></section><section class="rail-section"><div class="rail-head"><h3>Seminar sắp tới</h3><button data-view="events">Xem lịch</button></div>${eventsMarkup(true)}</section><section class="rail-section"><div class="rail-head"><h3>Đi theo sự tò mò</h3></div>${topics.map((t, i) => `<button class="topic-row" data-topic="${t}" style="width:100%"><span class="dot" style="background:${["#b2c7a4", "#d3b88d", "#b8a5cf", "#a4b9ce"][i]}"></span><span>${t}</span><small>${items.filter((x) => x.topic === t && feedVisible(x)).length}</small></button>`).join("")}</section><div class="newsletter"><h3>Ít nhiễu hơn. Nhiều góc nhìn hơn.</h3><p>Mỗi ý tưởng đáng nhớ đều xứng đáng có một chỗ trong thư viện của bạn.</p><button data-view="saved">Mở thư viện của tôi</button></div><div class="rail-foot">AIQS Project · A space for curious minds.<br>Bản mẫu tương tác · Nội dung minh họa</div>`;
 }
 const events = [
   {
@@ -266,6 +296,9 @@ const events = [
     title: "Reading group: World Models",
     time: "19:30 – 21:00 · Online",
     topic: topics[0],
+    // UTC, matching the Asia/Bangkok (UTC+7) times shown above.
+    start: "20261128T123000Z",
+    end: "20261128T140000Z",
   },
   {
     id: "e2",
@@ -274,6 +307,8 @@ const events = [
     title: "Tư duy xác suất trong đời sống",
     time: "20:00 – 21:30 · Online",
     topic: topics[3],
+    start: "20261130T130000Z",
+    end: "20261130T143000Z",
   },
 ];
 function eventsMarkup(compact = false) {
@@ -296,7 +331,16 @@ function render() {
     rail = rightRail();
   if (state.view === "reader") {
     const x = items.find((x) => x.id === state.id);
+    if (!x && !contentSettled()) {
+      document.querySelector("#app").innerHTML = shell(
+        '<article class="reader reader-loading" role="status"><div class="reader-header"><button class="back" data-view="feed">‹ &nbsp; Quay lại khám phá</button></div><div class="empty">Đang tải nội dung…</div></article>',
+        "",
+      );
+      bind();
+      return;
+    }
     if (!x) {
+      toast("Không tìm thấy nội dung này. Có thể bài đã được gỡ.");
       go("feed");
       return;
     }
@@ -335,7 +379,7 @@ function render() {
   } else {
     let list = items.filter(
       (x) =>
-        (!x.isNews || newsItems.slice(0, 3).some((n) => n.id === x.id)) &&
+        feedVisible(x) &&
         (state.view !== "saved" || saved.includes(x.id)) &&
         (state.type === "Tất cả" || x.type === state.type) &&
         (!state.topic || x.topic === state.topic) &&
@@ -519,8 +563,8 @@ function bind() {
     (e) =>
       (e.onclick = () => {
         const event = events.find((x) => x.id === e.dataset.rsvp);
-        const day = event.day;
-        const data = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//AIQS Project//Seminar//VI\r\nBEGIN:VEVENT\r\nUID:${event.id}@luma.local\r\nDTSTAMP:20261123T000000Z\r\nDTSTART:202611${day}T${event.id === "e1" ? "123000" : "130000"}Z\r\nDTEND:202611${day}T140000Z\r\nSUMMARY:[Minh họa] ${event.title}\r\nDESCRIPTION:Lịch minh họa từ AIQS Project. Không phải sự kiện thực tế.\r\nEND:VEVENT\r\nEND:VCALENDAR`;
+        const stamp = new Date().toISOString().replace(/[-:]|\.\d{3}/g, "");
+        const data = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//AIQS Project//Seminar//VI\r\nBEGIN:VEVENT\r\nUID:${event.id}@luma.local\r\nDTSTAMP:${stamp}\r\nDTSTART:${event.start}\r\nDTEND:${event.end}\r\nSUMMARY:[Minh họa] ${event.title}\r\nDESCRIPTION:Lịch minh họa từ AIQS Project. Không phải sự kiện thực tế.\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n`;
         const a = document.createElement("a");
         a.href = URL.createObjectURL(
           new Blob([data], { type: "text/calendar;charset=utf-8" }),
@@ -587,7 +631,9 @@ function readRouteId(hash = location.hash) {
 window.addEventListener("hashchange", () => {
   if (location.hash.startsWith("#read/")) {
     const id = readRouteId();
-    if (items.some((x) => x.id === id)) openItem(id);
+    // An unknown id is handled by render(): loading state first, then a notice.
+    if (id !== null && (state.view !== "reader" || id !== state.id))
+      openItem(id);
   }
 });
 const initialReadId = readRouteId();
