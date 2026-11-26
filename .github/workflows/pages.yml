@@ -18,15 +18,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "22"
-      - name: Check JavaScript syntax
-        run: |
-          for file in dist/*.js tools/*.mjs; do node --check "$file"; done
-      - name: Verify feed, accounts, news and rich content
-        run: |
-          node verify.cjs
-          node verify-account.cjs
-          node verify-news.mjs
-          node verify-rich.cjs
+      - name: Check source and run regression tests
+        run: node tools/check.mjs
 
   deploy:
     name: Deploy production

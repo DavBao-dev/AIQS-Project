@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile } from "node:fs/promises";
 import worker, {
   plain,
   parseFeed,
   collectNews,
   SOURCES,
-} from "./dist/_worker.js";
+} from "../dist/_worker.js";
 assert.equal(plain('&lt;img src="x"&gt; A &amp; B'), "A & B");
 assert.equal(plain("<![CDATA[<p>Hello</p>]]>"), "Hello");
 assert.equal(plain("&lt;script&gt;bad()&lt;/script&gt; Good"), "Good");
@@ -90,10 +90,10 @@ assert.equal(
   true,
 );
 globalThis.fetch = savedFetch;
-// Sanitize the previously fetched snapshot without changing its fetch timestamp.
+// Tests inspect the fallback snapshot without modifying application assets.
 const snapshot = JSON.parse(await readFile("dist/news-snapshot.json", "utf8"));
-for (const item of snapshot.items) item.excerpt = plain(item.excerpt);
-await writeFile("dist/news-snapshot.json", JSON.stringify(snapshot, null, 2));
+for (const item of snapshot.items)
+  assert.equal(item.excerpt, plain(item.excerpt));
 console.log(
   "News checks passed: RSS/Atom parsing, HTML/entities, source allowlist, future dates, partial collection, edge cache, HTTP method, offline snapshot.",
 );
