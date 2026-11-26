@@ -64,9 +64,14 @@ function decorateAccount() {
   add.onclick = () => showWriter();
   const profile = document.querySelector(".profile");
   if (profile) {
-    profile.innerHTML = `<span class="avatar">${esc(accountName().slice(0, 1).toUpperCase())}</span><div><strong>${esc(account.user ? accountName() : "Không gian của bạn")}</strong><small>${esc(account.user ? cloudStatus || "Đồng bộ cùng tài khoản" : "Chế độ khách · Lưu trên thiết bị")}</small><button class="account-link" id="my-posts">Bài viết & bản nháp</button></div>`;
+    profile.innerHTML = `<span class="avatar">${esc(initialsOf(accountName(), 1))}</span><div><strong>${esc(account.user ? accountName() : "Không gian của bạn")}</strong><small>${esc(account.user ? cloudStatus || "Đồng bộ cùng tài khoản" : "Chế độ khách · Lưu trên thiết bị")}</small><button class="account-link" id="my-posts">Bài viết & bản nháp</button></div>`;
     profile.querySelector("button").onclick = () => showMyPosts();
   }
+  addCloudBanners();
+}
+function addCloudBanners() {
+  const main = document.querySelector("main");
+  if (!main) return;
   if (account.user && !account.ready) {
     const info = document.createElement("div");
     info.className = "cloud-banner";
@@ -77,15 +82,28 @@ function decorateAccount() {
       retry.onclick = () => refreshSession(account.user, true);
       info.append(retry);
     }
-    document.querySelector("main").prepend(info);
+    main.prepend(info);
   }
   if (pendingWrites.size) {
     const warning = document.createElement("button");
     warning.className = "cloud-banner";
     warning.textContent = "Có thay đổi chưa đồng bộ · Thử lại";
     warning.onclick = retryWrites;
-    document.querySelector("main").prepend(warning);
+    main.prepend(warning);
   }
+}
+// Sync progress must not rebuild the page: a full render() here wiped whatever the
+// reader was typing (notes, search) every time a scroll-progress save finished.
+function updateCloudUI() {
+  document.querySelectorAll(".profile small").forEach((el) => {
+    el.textContent = account.user
+      ? cloudStatus || "Đồng bộ cùng tài khoản"
+      : "Chế độ khách · Lưu trên thiết bị";
+  });
+  document
+    .querySelectorAll("main > .cloud-banner")
+    .forEach((el) => el.remove());
+  addCloudBanners();
 }
 const accountObserver = new MutationObserver(() => decorateAccount());
 accountObserver.observe(document.querySelector("#app"), { childList: true });
@@ -263,7 +281,7 @@ function postToItem(p) {
     desc: p.summary,
     takeaway: p.summary,
     author: p.author_name,
-    initial: p.author_name.slice(0, 2).toUpperCase(),
+    initial: initialsOf(p.author_name, 2),
     date: new Date(p.created_at).toLocaleDateString("vi-VN"),
     timestamp: Date.parse(p.created_at),
     read:
@@ -339,8 +357,10 @@ async function refreshSession(user, force = false) {
   applyUserData(
     user ? {} : Object.fromEntries(dataKeys.map((k) => [k, load(k, [])])),
   );
-  if (state.view === "reader" && state.id?.startsWith("post-"))
-    state.view = "feed";
+  // Do not leave the reader here: a shared #read/post-... link must survive the
+  // first session restore. render() shows a loading state while the posts are
+  // fetched, then falls back to the feed only if the post is really gone.
+  settled.posts = false;
   render();
   if (!user) {
     try {
@@ -348,10 +368,12 @@ async function refreshSession(user, force = false) {
       if (generation !== sessionGeneration) return;
       postRows = publicRows;
       rebuildItems();
-      render();
     } catch {
+      if (generation !== sessionGeneration) return;
       toast("Chưa tải được bài viết cộng đồng.");
     }
+    settled.posts = true;
+    render();
     return;
   }
   try {
@@ -382,6 +404,7 @@ async function refreshSession(user, force = false) {
   } finally {
     if (generation === sessionGeneration) {
       account.loading = false;
+      settled.posts = true;
       render();
     }
   }
@@ -396,7 +419,7 @@ account.sync = (key, value) => {
     .then(async () => {
       if (generation !== sessionGeneration) return;
       cloudStatus = "Đang đồng bộ…";
-      render();
+      updateCloudUI();
       const { error } = await supa
         .from("luma_user_data")
         .upsert(
@@ -407,12 +430,12 @@ account.sync = (key, value) => {
       if (error) throw error;
       if (pendingWrites.get(key) === snapshot) pendingWrites.delete(key);
       cloudStatus = pendingWrites.size ? "Đang đồng bộ…" : "Đã đồng bộ";
-      render();
+      updateCloudUI();
     })
     .catch(() => {
       if (generation === sessionGeneration) {
         cloudStatus = "Có thay đổi chưa đồng bộ";
-        render();
+        updateCloudUI();
         toast("Chưa đồng bộ được. Nhấn Thử lại để lưu lên tài khoản.");
       }
     });
@@ -678,36 +701,50 @@ function showMyPosts() {
         showWriter(p);
       }),
   );
-  postsDialog.querySelectorAll("[data-unpublish]").forEach(
-    (b) =>
-      (b.onclick = () =>
-        changeStatus(
-          b,
-          b.dataset.unpublish,
-          "draft",
-          "Đã chuyển bài về bản nháp; nội dung vẫn được giữ lại.",
-        )),
-  );
-  postsDialog.querySelectorAll("[data-approve]").forEach(
-    (b) =>
-      (b.onclick = () =>
-        changeStatus(b, b.dataset.approve, "published", "Đã duyệt bài lên feed.")),
-  );
-  postsDialog.querySelectorAll("[data-reject]").forEach(
-    (b) =>
-      (b.onclick = () =>
-        changeStatus(
-          b,
-          b.dataset.reject,
-          "draft",
-          "Đã trả bài về bản nháp cho tác giả.",
-        )),
-  );
+  postsDialog
+    .querySelectorAll("[data-unpublish]")
+    .forEach(
+      (b) =>
+        (b.onclick = () =>
+          changeStatus(
+            b,
+            b.dataset.unpublish,
+            "draft",
+            "Đã chuyển bài về bản nháp; nội dung vẫn được giữ lại.",
+          )),
+    );
+  postsDialog
+    .querySelectorAll("[data-approve]")
+    .forEach(
+      (b) =>
+        (b.onclick = () =>
+          changeStatus(
+            b,
+            b.dataset.approve,
+            "published",
+            "Đã duyệt bài lên feed.",
+          )),
+    );
+  postsDialog
+    .querySelectorAll("[data-reject]")
+    .forEach(
+      (b) =>
+        (b.onclick = () =>
+          changeStatus(
+            b,
+            b.dataset.reject,
+            "draft",
+            "Đã trả bài về bản nháp cho tác giả.",
+          )),
+    );
   if (!postsDialog.open) postsDialog.showModal();
 }
 async function initSupabase() {
   const config = window.LUMA_SUPABASE;
-  if (!config?.url || !config.publishableKey) return;
+  if (!config?.url || !config.publishableKey) {
+    markSettled("posts");
+    return;
+  }
   try {
     if (
       !/^https:\/\//.test(config.url) ||
@@ -773,6 +810,7 @@ async function initSupabase() {
     account.loading = false;
     cloudStatus = "Chưa kết nối được dịch vụ tài khoản";
     toast(cloudStatus);
+    settled.posts = true;
     render();
   }
 }

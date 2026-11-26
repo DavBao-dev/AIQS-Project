@@ -54,6 +54,9 @@ const ArticleCore = (() => {
             : safeURL(token.href);
           const text = this.parser.parseInline(token.tokens);
           if (!href) return text;
+          // In-page anchors stay in the same tab; only external links open a new one.
+          if (href.startsWith("#"))
+            return `<a href="${escape(href)}">${text}</a>`;
           return `<a href="${escape(href)}" target="_blank" rel="noopener noreferrer">${text}</a>`;
         },
       },
@@ -85,10 +88,18 @@ const ArticleCore = (() => {
             return a < 0 ? b : b < 0 ? a : Math.min(a, b);
           },
           tokenizer(src) {
-            const m =
-              /^\$(?!\$)((?:\\.|[^$\\\n])+?)\$(?!\$)/.exec(src) ||
-              /^\\\(([\s\S]+?)\\\)/.exec(src);
-            if (m) return { type: "mathInline", raw: m[0], text: m[1] };
+            const dollar = /^\$(?!\$)((?:\\.|[^$\\\n])+?)\$(?!\$)/.exec(src);
+            // Same rule as Pandoc, so prices such as "$5 và $10" stay plain text:
+            // no space inside the delimiters and no digit right after the closing $.
+            if (
+              dollar &&
+              !/^\s|\s$/.test(dollar[1]) &&
+              !/\d/.test(src.charAt(dollar[0].length))
+            )
+              return { type: "mathInline", raw: dollar[0], text: dollar[1] };
+            const paren = /^\\\(([\s\S]+?)\\\)/.exec(src);
+            if (paren)
+              return { type: "mathInline", raw: paren[0], text: paren[1] };
           },
           renderer(token) {
             return `<span class="math-source" data-display="false">${escape(token.text)}</span>`;

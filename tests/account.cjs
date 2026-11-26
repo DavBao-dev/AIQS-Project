@@ -246,14 +246,34 @@ run("supa=fakeSupa");
     "Good",
   );
   run(
-    "putLibrary('archived-news',{shelf:'want',snapshot:{...seed[0],id:'archived-news',title:'Archived news'}});rebuildItems()",
+    "putLibrary('archived-news',{shelf:'want',snapshot:{...seed[0],id:'archived-news',isNews:true,title:'Archived news'}});rebuildItems()",
   );
   assert.ok(run("items.some(x=>x.id==='archived-news')"));
+  // Only news needs a snapshot. Other content must not be copied into the library
+  // row or brought back after it is unpublished.
+  run(
+    "putLibrary('gone-post',{shelf:'want',snapshot:{...seed[0],id:'gone-post',isCommunity:true}});rebuildItems()",
+  );
+  assert.equal(run("entryFor('gone-post').snapshot"), undefined);
+  assert.ok(!run("items.some(x=>x.id==='gone-post')"));
   rows = [];
   await run(
     "refreshSession({id:'user-c',email:'c@example.com',user_metadata:{}},true)",
   );
   assert.equal(run("libraryState.length"), 0);
+  // Sync progress only updates the status text. A full render() here used to wipe
+  // the note or search box the reader was typing in.
+  run(
+    "var __renders=0; var __render=render; render=function(){__renders++; return __render()}",
+  );
+  run("account.sync('saved',['world'])");
+  await run("writeQueue");
+  assert.equal(run("__renders"), 0, "sync must not rebuild the page");
+  run("render=__render");
+  assert.equal(run("initialsOf('Đạt Nguyễn',2)"), "ĐẠ");
+  assert.equal(run("initialsOf('😀 Nam',1)"), "😀");
+  assert.equal(run("initialsOf('A\\u0301nh',1)"), "Á");
+  assert.equal(run("initialsOf('👩‍💻 An',1)"), "👩‍💻");
   // A save rejected after switching accounts must not copy the old article
   // into the new actor's local draft.
   let rejectPost;

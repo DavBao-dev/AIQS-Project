@@ -40,6 +40,10 @@ let newsState = {
 const canSavePersonal = () =>
   !account.loading && (!account.user || account.ready);
 const entryFor = (id) => libraryState.find((e) => e.id === id);
+const snapshotFor = (id) => {
+  const x = items.find((x) => x.id === id);
+  return x?.isNews ? { snapshot: x } : {};
+};
 const shelfFor = (id) => entryFor(id)?.shelf || "want";
 function putLibrary(id, patch) {
   if (!canSavePersonal()) return;
@@ -50,7 +54,12 @@ function putLibrary(id, patch) {
     addedAt: new Date().toISOString(),
   };
   libraryState = libraryState.filter((e) => e.id !== id);
-  libraryState.push({ ...old, ...patch });
+  const entry = { ...old, ...patch };
+  // Snapshots exist so a news item survives leaving the RSS window. Keeping a copy of
+  // every opened article bloats the single "library" row that is re-uploaded on each
+  // scroll-progress save, and would keep unpublished community posts readable.
+  if (entry.snapshot && !entry.snapshot.isNews) delete entry.snapshot;
+  libraryState.push(entry);
   persist("library", libraryState);
 }
 function chooseShelf(id, shelf) {
@@ -65,7 +74,7 @@ function chooseShelf(id, shelf) {
   putLibrary(id, {
     shelf,
     progress: shelf === "completed" ? 100 : entryFor(id)?.progress || 0,
-    snapshot: items.find((x) => x.id === id),
+    ...snapshotFor(id),
   });
   render();
   toast("Đã chuyển vào kệ " + shelfLabels[shelf].toLocaleLowerCase());
@@ -75,7 +84,11 @@ rebuildItems = function () {
   previousRebuild();
   items = [...communityItems, ...custom, ...newsItems, ...seed];
   for (const entry of libraryState) {
-    if (entry.snapshot && !items.some((x) => x.id === entry.id))
+    if (
+      entry.snapshot?.isNews &&
+      entry.id === entry.snapshot.id &&
+      !items.some((x) => x.id === entry.id)
+    )
       items.push(entry.snapshot);
   }
 };
@@ -101,7 +114,7 @@ openItem = function (id) {
           ? "reading"
           : shelfFor(id)
         : "history",
-      snapshot: x,
+      ...snapshotFor(id),
     });
   }
   document.querySelector(".selection-tools")?.remove();
@@ -144,7 +157,7 @@ shell = function (content, rail) {
           : state.view === "events"
             ? "Seminar"
             : "Khám phá";
-  return `<aside class="app-rail"><a class="rail-logo" href="#" aria-label="AIQS Project trang chủ">${svg("logo")}</a><nav>${navItem("feed", "compass", "Khám phá")}${navItem("news", "news", "News")}${navItem("saved", "bookmark", "Thư viện")}${navItem("notes", "highlight", "Ghi chú")}${navItem("events", "calendar", "Seminar")}</nav><div class="rail-bottom"><button class="rail-item" id="theme" title="Đổi giao diện" aria-label="Đổi giao diện">${svg("sun")}</button><button class="rail-profile" id="rail-account" aria-label="Tài khoản">${esc(typeof accountName === "function" ? accountName().slice(0, 1).toUpperCase() : "B")}</button></div></aside>
+  return `<aside class="app-rail"><a class="rail-logo" href="#" aria-label="AIQS Project trang chủ">${svg("logo")}</a><nav>${navItem("feed", "compass", "Khám phá")}${navItem("news", "news", "News")}${navItem("saved", "bookmark", "Thư viện")}${navItem("notes", "highlight", "Ghi chú")}${navItem("events", "calendar", "Seminar")}</nav><div class="rail-bottom"><button class="rail-item" id="theme" title="Đổi giao diện" aria-label="Đổi giao diện">${svg("sun")}</button><button class="rail-profile" id="rail-account" aria-label="Tài khoản">${esc(typeof accountName === "function" ? initialsOf(accountName(), 1) : "B")}</button></div></aside>
   <aside class="context-sidebar"><a class="workspace-brand" href="#">AIQS <span>Project</span></a><div class="context-heading">${svg(library ? "book" : news ? "news" : "compass")}<strong>${label}</strong></div>${
     library
       ? `<button class="context-link" id="publications">${svg("pen")}Bài viết của tôi</button><button class="context-link ${state.shelf === "liked" ? "active" : ""}" data-shelf="liked">${svg("heart")}Đã thích<span>${liked.length}</span></button><button class="context-link ${state.shelf === "history" ? "active" : ""}" data-shelf="history">${svg("clock")}Lịch sử đọc</button><div class="section-label">KỆ SÁCH CỦA BẠN</div>${["all", "want", "reading", "completed"].map((s, i) => `<button class="context-link ${state.shelf === s ? "active" : ""}" data-shelf="${s}">${svg(["grid", "bookmark", "book", "check"][i])}${shelfLabels[s]}<span>${s === "all" ? saved.length : saved.filter((id) => shelfFor(id) === s).length}</span></button>`).join("")}`
@@ -167,6 +180,10 @@ shell = function (content, rail) {
   <div class="context-bottom"><div class="profile"></div></div></aside>
   <div class="shell workspace ${library ? "library-workspace" : ""} ${news ? "news-workspace" : ""} ${reader ? "reading-workspace" : ""}"><a href="#" class="mobile-brand">AIQS <span>Project</span></a><header class="topbar"><div class="workspace-location">${svg(library ? "book" : news ? "news" : reader ? "book" : "compass")}<span>${label}</span></div><div class="search">${svg("search")}<input id="search" aria-label="Tìm kiếm nội dung" placeholder="${library ? "Tìm trong thư viện…" : news ? "Tìm tin tức, chủ đề, nguồn…" : "Tìm ý tưởng, chủ đề, nội dung…"}" value="${esc(state.query)}"><kbd>/</kbd></div><div class="topright"><button class="primary" id="add">${svg("pen")}Viết bài</button></div></header><div class="layout"><main>${content}</main>${!library ? `<aside class="right-rail ${reader ? "reader-rail" : ""}">${rail}</aside>` : ""}</div><footer class="workspace-footer">AIQS Project <span>Tri thức đáng đọc. Ý tưởng đáng giữ.</span></footer></div>`;
 };
+// Date.parse(0) is NaN in some engines, which made the sort order undefined for
+// items saved before the library existed.
+const libraryStamp = (id) =>
+  Date.parse(entryFor(id)?.lastReadAt || entryFor(id)?.addedAt || "") || 0;
 function libraryItems() {
   let list = items.filter((x) =>
     state.shelf === "liked"
@@ -185,11 +202,7 @@ function libraryItems() {
           .toLocaleLowerCase()
           .includes(state.query.toLocaleLowerCase()),
     )
-    .sort(
-      (a, b) =>
-        Date.parse(entryFor(b.id)?.lastReadAt || entryFor(b.id)?.addedAt || 0) -
-        Date.parse(entryFor(a.id)?.lastReadAt || entryFor(a.id)?.addedAt || 0),
-    );
+    .sort((a, b) => libraryStamp(b.id) - libraryStamp(a.id));
 }
 function libraryCard(x) {
   const e = entryFor(x.id),
@@ -392,7 +405,7 @@ function bindWorkspace() {
       if (!saved.includes(id) && canSavePersonal())
         putLibrary(id, {
           shelf: entryFor(id)?.shelf === "history" ? "want" : shelfFor(id),
-          snapshot: items.find((x) => x.id === id),
+          ...snapshotFor(id),
         });
       previous?.();
     };
@@ -534,6 +547,7 @@ async function fetchNews(manual = false) {
       "Chưa kết nối được nguồn tin. Bạn có thể thử làm mới sau.";
   } finally {
     newsBusy = false;
+    markSettled("news");
     if (
       (state.view === "news" || state.view === "feed") &&
       !document.querySelector("dialog[open]") &&
@@ -594,7 +608,8 @@ else if (location.hash.startsWith("#library/")) {
     : "all";
 }
 render();
-if (typeof fetch === "function") {
+if (typeof fetch !== "function") markSettled("news");
+else {
   fetchNews();
   setInterval(() => {
     if (document.visibilityState !== "hidden") fetchNews();

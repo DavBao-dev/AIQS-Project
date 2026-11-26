@@ -44,6 +44,12 @@ assert.match(
   ),
   /data-storage-image/,
 );
+// Prices are not math; real inline math still is.
+assert.doesNotMatch(parse("Giá từ $5 lên $10 mỗi cổ phiếu."), /math-source/);
+assert.match(parse("Giá $5 và $x^2$"), /math-source[^>]*>x\^2</);
+// In-page anchors stay in the same tab.
+assert.doesNotMatch(parse("[mục](#phan-2)"), /target=/);
+assert.match(parse("[web](https://example.com)"), /target="_blank"/);
 assert.match(parse("| Cột |\n| --- |\n| Nội dung |"), /<table>/);
 console.log(
   "Rich article checks passed: 4 math delimiters, code exclusions, formatting, image schemes, URL validation, raw HTML escaping and tables.",
