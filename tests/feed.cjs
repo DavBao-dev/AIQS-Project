@@ -65,6 +65,9 @@ run(
 assert.ok(html().includes("Một câu đáng nhớ"));
 assert.ok(html().includes("Ghi chú của tôi"));
 assert.equal(run("esc('<script>')"), "&lt;script&gt;");
+run("var writerOpened = false; function showWriter() { writerOpened = true; }");
+el("#add").onclick();
+assert.equal(run("writerOpened"), true, "Viết bài opens the current writer");
 assert.equal(run("readRouteId('#read/%E0%A4%A')"), null);
 assert.equal(run("readRouteId('#read/a%20b')"), "a b");
 assert.equal(run("readRouteId('#news')"), null);

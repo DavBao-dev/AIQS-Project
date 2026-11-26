@@ -493,8 +493,7 @@ function bind() {
     );
     render();
   };
-  document.querySelector("#add").onclick = () =>
-    document.querySelector("#publish").showModal();
+  document.querySelector("#add").onclick = () => showWriter();
   document.querySelector("#copy")?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(location.href);
@@ -560,45 +559,6 @@ function restoreHighlights() {
 document.addEventListener("mouseup", (e) => {
   if (typeof showSelection === "function") showSelection(e);
 });
-document.querySelector("#close-publish")?.addEventListener("click", () => {
-  document.querySelector("#publish").close();
-});
-document.querySelector("#publish-form").onsubmit = (e) => {
-  e.preventDefault();
-  const f = new FormData(e.target);
-  const url = new URL(f.get("url"));
-  if (!["https:", "http:"].includes(url.protocol)) {
-    toast("Đường dẫn cần bắt đầu bằng https:// hoặc http://");
-    return;
-  }
-  const x = {
-    id: "custom-" + crypto.randomUUID(),
-    type: f.get("type"),
-    topic: f.get("topic"),
-    title: f.get("title").trim(),
-    desc: f.get("desc").trim(),
-    url: url.href,
-    author: "Bạn",
-    initial: "N",
-    date: "Vừa thêm",
-    read: "2 phút đọc",
-    views: "0",
-    likes: 0,
-    duration: "",
-    art: null,
-    tags: [f.get("topic")],
-    sections: [],
-    takeaway: f.get("desc").trim(),
-  };
-  if (!x.title || !x.desc) return;
-  custom.unshift(x);
-  persist("custom", custom);
-  items = [...custom, ...seed];
-  e.target.reset();
-  document.querySelector("#publish").close();
-  go("feed");
-  toast("Đã thêm nội dung của bạn");
-};
 document.addEventListener("keydown", (e) => {
   if (
     e.key === "/" &&

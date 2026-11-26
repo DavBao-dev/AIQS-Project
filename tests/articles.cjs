@@ -1,7 +1,7 @@
 const assert = require("assert/strict"),
   fs = require("fs"),
   vm = require("vm");
-const marked = require("./dist/vendor/marked/marked.umd.js");
+const marked = require("../dist/vendor/marked/marked.umd.js");
 const ctx = vm.createContext({ URL, marked });
 vm.runInContext(fs.readFileSync("dist/article-core.js", "utf8"), ctx);
 vm.runInContext("var parser=ArticleCore.createParser(marked.Marked)", ctx);
