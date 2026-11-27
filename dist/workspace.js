@@ -140,6 +140,8 @@ function shortDate(value) {
     return Math.floor(diff / 3600000) + " giờ trước";
   return deskDate(value);
 }
+const sideItem = (view, icon, label) =>
+  `<button class="side-item ${state.view === view ? "active" : ""}" data-view="${view}">${svg(icon)}${label}</button>`;
 const navItem = (view, icon, label) =>
   `<button class="rail-item ${state.view === view ? "active" : ""}" data-view="${view}" title="${label}" aria-label="${label}">${svg(icon)}<span>${label}</span></button>`;
 shell = function (content, rail) {
@@ -158,7 +160,7 @@ shell = function (content, rail) {
             ? "Seminar"
             : "Khám phá";
   return `<aside class="app-rail"><a class="rail-logo" href="#" aria-label="AIQS Project trang chủ">${svg("logo")}</a><nav>${navItem("feed", "compass", "Khám phá")}${navItem("news", "news", "News")}${navItem("saved", "bookmark", "Thư viện")}${navItem("notes", "highlight", "Ghi chú")}${navItem("events", "calendar", "Seminar")}</nav><div class="rail-bottom"><button class="rail-item" id="theme" title="Đổi giao diện" aria-label="Đổi giao diện">${svg("sun")}</button><button class="rail-profile" id="rail-account" aria-label="Tài khoản">${esc(typeof accountName === "function" ? initialsOf(accountName(), 1) : "B")}</button></div></aside>
-  <aside class="context-sidebar"><a class="workspace-brand" href="#">AIQS <span>Project</span></a><div class="context-heading">${svg(library ? "book" : news ? "news" : "compass")}<strong>${label}</strong></div>${
+  <aside class="context-sidebar"><a class="side-brand" href="#" aria-label="AIQS Project trang chủ">${svg("logo")}<span>AIQS</span></a><nav class="side-nav" aria-label="Điều hướng chính">${sideItem("feed", "compass", "Khám phá")}${sideItem("news", "news", "News")}${sideItem("saved", "bookmark", "Thư viện của tôi")}${sideItem("notes", "highlight", "Highlights & Notes")}${sideItem("events", "calendar", "Lịch seminar")}</nav><div class="side-sep"></div>${
     library
       ? `<button class="context-link" id="publications">${svg("pen")}Bài viết của tôi</button><button class="context-link ${state.shelf === "liked" ? "active" : ""}" data-shelf="liked">${svg("heart")}Đã thích<span>${liked.length}</span></button><button class="context-link ${state.shelf === "history" ? "active" : ""}" data-shelf="history">${svg("clock")}Lịch sử đọc</button><div class="section-label">KỆ SÁCH CỦA BẠN</div>${["all", "want", "reading", "completed"].map((s, i) => `<button class="context-link ${state.shelf === s ? "active" : ""}" data-shelf="${s}">${svg(["grid", "bookmark", "book", "check"][i])}${shelfLabels[s]}<span>${s === "all" ? saved.length : saved.filter((id) => shelfFor(id) === s).length}</span></button>`).join("")}`
       : news
@@ -177,7 +179,7 @@ shell = function (content, rail) {
               "",
             )}<div class="section-label">THEO DÒNG TÒ MÒ</div>${topics.map((t, i) => `<button class="topic-nav" data-topic="${esc(t)}"><span class="dot" style="background:${["#bdcba5", "#cda985", "#bca0d7", "#9bb7cd"][i]}"></span>${esc(t)}</button>`).join("")}`
   }
-  <div class="context-bottom"><div class="profile"></div></div></aside>
+  <div class="context-bottom"><button class="side-item js-theme" type="button">${svg("sun")}${document.body.classList.contains("light") ? "Giao diện tối" : "Giao diện sáng"}</button><div class="profile"></div></div></aside>
   <div class="shell workspace ${library ? "library-workspace" : ""} ${news ? "news-workspace" : ""} ${reader ? "reading-workspace" : ""}"><a href="#" class="mobile-brand">AIQS <span>Project</span></a><header class="topbar"><div class="workspace-location">${svg(library ? "book" : news ? "news" : reader ? "book" : "compass")}<span>${label}</span></div><div class="search">${svg("search")}<input id="search" aria-label="Tìm kiếm nội dung" placeholder="${library ? "Tìm trong thư viện…" : news ? "Tìm tin tức, chủ đề, nguồn…" : "Tìm ý tưởng, chủ đề, nội dung…"}" value="${esc(state.query)}"><kbd>/</kbd></div><div class="topright"><button class="primary" id="add">${svg("pen")}Viết bài</button></div></header><div class="layout"><main>${content}</main>${!library ? `<aside class="right-rail ${reader ? "reader-rail" : ""}">${rail}</aside>` : ""}</div><footer class="workspace-footer">AIQS Project <span>Tri thức đáng đọc. Ý tưởng đáng giữ.</span></footer></div>`;
 };
 // Date.parse(0) is NaN in some engines, which made the sort order undefined for
@@ -323,7 +325,7 @@ render = function () {
   if (state.view === "reader") upgradeReader();
 };
 function bindWorkspace() {
-  document.querySelectorAll(".rail-logo,.workspace-brand").forEach(
+  document.querySelectorAll(".rail-logo,.side-brand,.mobile-brand").forEach(
     (e) =>
       (e.onclick = (event) => {
         event.preventDefault();

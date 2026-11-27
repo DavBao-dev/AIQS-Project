@@ -1,0 +1,686 @@
+/*
+  AIQS feed, alphaXiv-style layer. Loaded after every other stylesheet.
+  Colors come from the existing tokens (--bg, --panel, --panel2, --soft, --coral,
+  --line, --text, --muted) so the light theme (.light) keeps working untouched.
+  Type: Be Vietnam Pro everywhere (self-hosted, full Vietnamese coverage).
+*/
+
+.workspace h1,
+.workspace h2,
+.workspace .card-title,
+.side-brand,
+.mobile-brand {
+  font-family: var(--font-body);
+}
+
+/* ---------- Pills and controls ---------- */
+.workspace .primary {
+  height: 52px;
+  padding: 0 24px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d0e0a;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.workspace .primary:hover {
+  color: #1d0e0a;
+}
+.workspace .primary svg {
+  margin: 0;
+}
+.light .workspace .primary,
+.light .workspace .primary:hover {
+  color: #fff;
+}
+.workspace .account-button {
+  height: 52px;
+  padding: 0 22px;
+  border-radius: 999px;
+  background: var(--panel2);
+  border: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+.workspace .account-button:hover {
+  background: var(--soft);
+}
+
+/* ---------- Top bar ---------- */
+.workspace .topbar {
+  background: var(--bg);
+  backdrop-filter: none;
+  border-bottom: 0;
+  margin-bottom: 6px;
+  padding: 24px 0 14px;
+  gap: 12px;
+}
+.workspace-location {
+  display: none;
+}
+.workspace .search {
+  max-width: none;
+  margin: 0;
+  min-width: 0;
+}
+.workspace .search svg {
+  left: 22px;
+  top: 17px;
+  width: 22px;
+  height: 22px;
+}
+.workspace .search input {
+  height: 58px;
+  padding: 0 64px 0 56px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: transparent;
+  font-size: 17px;
+}
+.workspace .search input:focus {
+  border-color: var(--coral);
+  outline: 0;
+}
+.workspace .search kbd {
+  right: 22px;
+  top: 17px;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 8px;
+}
+
+/* ---------- Page heading, tabs, filters ---------- */
+.workspace .heading .eyebrow {
+  display: none;
+}
+.workspace .heading h1 {
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.25;
+  margin: 10px 0 2px;
+}
+.workspace .heading p {
+  font-size: 15px;
+  margin: 0 0 6px;
+}
+.workspace .tabs {
+  display: flex;
+  gap: 4px;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding: 5px;
+  margin: 14px 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--panel2);
+}
+.workspace .tabs::-webkit-scrollbar {
+  display: none;
+}
+.workspace .tab {
+  flex: none;
+  padding: 10px 22px;
+  border-radius: 999px;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.workspace .tab:hover {
+  background: var(--soft);
+}
+.workspace .tab.active {
+  background: var(--bg);
+  color: var(--coral);
+}
+.workspace .tab.active:after {
+  display: none;
+}
+.workspace .tab svg {
+  width: 17px;
+  height: 17px;
+  margin-right: 8px;
+}
+.workspace .filters {
+  margin: 0 0 20px;
+  gap: 8px;
+}
+.workspace .chip {
+  padding: 7px 16px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.workspace .chip.active {
+  background: var(--soft);
+  color: var(--coral);
+  border-color: transparent;
+}
+
+/* ---------- Feed cards ---------- */
+.workspace .feed-card {
+  padding: 24px 26px 20px;
+  margin: 0 0 22px;
+  border-radius: 24px;
+  background: transparent;
+}
+.workspace .card-top {
+  font-size: 15px;
+  gap: 10px;
+  min-width: 0;
+}
+.workspace .card-top .byline {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+.workspace .card-top .byline strong {
+  color: var(--text);
+  font-weight: 700;
+}
+.workspace .mini-avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  font-size: 12px;
+  font-weight: 700;
+  background: var(--soft);
+  color: var(--coral);
+}
+.workspace .card-title {
+  font-size: clamp(23px, 2.6vw, 34px);
+  line-height: 1.22;
+  letter-spacing: -0.02em;
+  font-weight: 700;
+  margin: 14px 0 12px;
+  text-wrap: balance;
+}
+.workspace .card-title:hover {
+  color: var(--coral);
+}
+.card-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.workspace .type,
+.topic-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+  background: var(--soft);
+  color: var(--coral);
+}
+.workspace .type svg {
+  width: 16px;
+  height: 16px;
+}
+.workspace .type.Video,
+.workspace .type.News {
+  color: var(--coral);
+}
+.topic-pill {
+  background: var(--panel2);
+  color: var(--muted);
+}
+.workspace .description {
+  font-size: 17px;
+  line-height: 1.7;
+  color: color-mix(in srgb, var(--text) 82%, transparent);
+  margin: 6px 0 16px;
+}
+.workspace .art {
+  height: auto;
+  aspect-ratio: 700 / 260;
+  border-radius: 18px;
+  background: #000;
+}
+.workspace .art .play {
+  font-size: 13px;
+  padding: 6px 14px;
+  border-radius: 999px;
+}
+.workspace .art .duration {
+  font-size: 12px;
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+.workspace .tags {
+  gap: 8px;
+  margin-top: 16px;
+}
+.workspace .tag {
+  font-size: 13px;
+  font-weight: 500;
+  padding: 5px 13px;
+  border-radius: 999px;
+}
+.workspace .card-footer {
+  border-top: 0;
+  margin-top: 14px;
+  padding-top: 4px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.workspace .action {
+  padding: 9px 16px;
+  gap: 8px;
+  border-radius: 999px;
+  background: var(--panel2);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 600;
+}
+.workspace .action:hover {
+  background: var(--soft);
+}
+.workspace .action svg {
+  width: 18px;
+  height: 18px;
+}
+.workspace .action.selected {
+  background: var(--soft);
+  color: var(--coral);
+}
+.workspace .card-footer .read {
+  margin-left: auto;
+  padding: 9px 20px;
+  border-radius: 999px;
+  background: var(--coral);
+  color: #1d0e0a;
+  font-size: 15px;
+  font-weight: 600;
+}
+.light .workspace .card-footer .read {
+  color: #fff;
+}
+
+/* ---------- Right rail: bordered boxes ---------- */
+.workspace .layout {
+  grid-template-columns: minmax(0, 1fr) 340px;
+  max-width: none;
+  gap: 32px;
+}
+.workspace .edition,
+.workspace .rail-foot {
+  display: none;
+}
+.workspace .right-rail .rail-section,
+.workspace .right-rail .feature,
+.workspace .right-rail .newsletter {
+  padding: 20px 22px;
+  margin: 0 0 20px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  background: transparent;
+}
+.workspace .right-rail .feature {
+  background: var(--soft);
+  border-color: transparent;
+}
+.workspace .right-rail .feature h3 {
+  font-family: var(--font-body);
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+.workspace .right-rail .feature p {
+  font-size: 14px;
+}
+.workspace .right-rail .feature button,
+.workspace .right-rail .newsletter button {
+  padding: 9px 18px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.workspace .right-rail .newsletter button {
+  background: var(--soft);
+  color: var(--coral);
+}
+.workspace .right-rail .newsletter h3 {
+  font-size: 18px;
+  font-weight: 600;
+}
+.workspace .right-rail .newsletter p {
+  font-size: 14px;
+}
+.workspace .rail-head {
+  margin-bottom: 12px;
+}
+.workspace .rail-head h3 {
+  font-size: 19px;
+  font-weight: 600;
+}
+.workspace .rail-head button {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--coral);
+}
+.workspace .event {
+  align-items: center;
+  padding: 12px 0;
+}
+.workspace .date-box {
+  width: 50px;
+  height: 56px;
+  border-radius: 14px;
+  font-size: 19px;
+  font-weight: 600;
+  background: var(--soft);
+  border-color: transparent;
+  color: var(--text);
+}
+.workspace .date-box small {
+  font-size: 10px;
+  font-weight: 600;
+}
+.workspace .event strong {
+  font-size: 15px;
+  font-weight: 600;
+}
+.workspace .event p {
+  font-size: 13px;
+}
+.workspace .topic-row {
+  padding: 10px 0;
+  gap: 12px;
+}
+.workspace .topic-row span {
+  font-size: 15px;
+  font-weight: 500;
+}
+.workspace .topic-row small {
+  font-size: 13px;
+}
+
+/* ---------- Reader ---------- */
+.workspace .reader h1 {
+  font-size: clamp(30px, 4vw, 48px);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  text-wrap: balance;
+}
+.workspace .reader-header .back {
+  display: inline-flex;
+  align-items: center;
+  padding: 9px 18px;
+  border-radius: 999px;
+  background: var(--panel2);
+  font-size: 15px;
+  font-weight: 600;
+}
+.workspace .reader-header .back:hover {
+  background: var(--soft);
+}
+.workspace .reader > .eyebrow {
+  display: inline-flex;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: var(--soft);
+  color: var(--coral);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+.workspace .reader .byline {
+  font-size: 16px;
+}
+.workspace .reader-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.workspace .reader-toolbar > button,
+.workspace .reader-toolbar > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 50px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--panel2);
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 600;
+}
+.workspace .reader-toolbar > button:hover,
+.workspace .reader-toolbar > a:hover {
+  background: var(--soft);
+  color: var(--coral);
+}
+.workspace .reader-toolbar > a {
+  background: var(--coral);
+  color: #1d0e0a;
+}
+.light .workspace .reader-toolbar > a {
+  color: #fff;
+}
+.workspace .reader-toolbar > a:hover {
+  background: var(--coral);
+  color: #1d0e0a;
+  filter: brightness(1.08);
+}
+.workspace .reader .art {
+  border-radius: 20px;
+}
+.workspace .reader .summary {
+  border-radius: 22px;
+}
+.workspace .reader-rail .note-compose {
+  border-radius: 18px;
+}
+
+/* ---------- Library and news: same radii and weights ---------- */
+.workspace .news-masthead h1,
+.workspace .breadcrumb {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+/* ---------- Desktop: one sidebar with the main navigation ---------- */
+@media (min-width: 801px) {
+  .app-rail {
+    display: none;
+  }
+  .context-sidebar {
+    left: 0;
+    width: 290px;
+    padding: 26px 16px 20px 20px;
+    gap: 0;
+  }
+  .workspace.shell {
+    margin-left: 290px;
+    padding: 0 36px 30px;
+  }
+  .side-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 14px 22px;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    color: var(--coral);
+  }
+  .side-brand svg {
+    width: 36px;
+    height: 36px;
+  }
+  .side-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .side-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    width: 100%;
+    padding: 12px 18px;
+    border-radius: 999px;
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--text);
+    text-align: left;
+  }
+  .side-item svg {
+    width: 22px;
+    height: 22px;
+    flex: none;
+  }
+  .side-item:hover {
+    background: var(--panel2);
+    color: var(--text);
+  }
+  .side-item.active {
+    background: var(--soft);
+    color: var(--coral);
+  }
+  .side-sep {
+    height: 1px;
+    margin: 16px 8px 14px;
+    background: var(--line);
+  }
+  .context-sidebar .context-link,
+  .context-sidebar .topic-nav {
+    border-radius: 999px;
+    padding: 10px 18px;
+    font-size: 15px;
+  }
+  .context-sidebar .section-label {
+    padding: 14px 18px 6px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+  }
+  .context-bottom {
+    margin-top: auto;
+    padding-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+}
+@media (max-width: 1100px) {
+  .workspace .layout {
+    display: block;
+    max-width: 850px;
+  }
+}
+@media (max-width: 800px) {
+  .side-brand,
+  .side-nav,
+  .side-sep {
+    display: none;
+  }
+  .workspace-location {
+    display: none;
+  }
+}
+@media (max-width: 650px) {
+  .workspace .topbar {
+    padding: 14px 0 10px;
+  }
+  .workspace .search input {
+    height: 50px;
+    font-size: 16px;
+  }
+  .workspace .search svg {
+    top: 14px;
+  }
+  .workspace .search kbd {
+    display: none;
+  }
+  .workspace .primary {
+    height: 50px;
+    padding: 0 18px;
+  }
+  .workspace .tabs {
+    width: 100%;
+  }
+  .workspace .feed-card {
+    padding: 18px 16px 16px;
+    border-radius: 20px;
+  }
+  .workspace .card-title {
+    font-size: 23px;
+  }
+  .workspace .description {
+    font-size: 16px;
+  }
+  .workspace .art {
+    border-radius: 14px;
+  }
+  .workspace .card-footer .read {
+    margin-left: 0;
+  }
+  .workspace .reader-toolbar > button,
+  .workspace .reader-toolbar > a {
+    height: 46px;
+    padding: 0 18px;
+    font-size: 15px;
+  }
+}
+@media (max-width: 650px) {
+  .workspace .account-button {
+    height: 50px;
+    padding: 0 16px;
+    font-size: 14px;
+    white-space: nowrap;
+    flex: none;
+  }
+  .workspace .search {
+    flex: 1 1 0;
+  }
+  .workspace .search input {
+    padding-right: 16px;
+  }
+}
+
+/* Reader: keep the hero inside its column; fixed heights from older layers off */
+.workspace .reader,
+.workspace .layout > * {
+  min-width: 0;
+}
+.reading-workspace .reader .art {
+  height: auto;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 700 / 280;
+  box-sizing: border-box;
+}
+@media (max-width: 650px) {
+  .workspace .topbar .account-button,
+  .workspace .account-button {
+    max-width: none;
+    font-size: 14px;
+    padding: 0 16px;
+    height: 50px;
+  }
+  .workspace .search input {
+    font-size: 16px;
+    line-height: normal;
+  }
+  .reading-workspace .reader .art {
+    height: auto;
+  }
+}

@@ -283,7 +283,7 @@ function shell(content, rail) {
 }
 function card(x) {
   const s = saved.includes(x.id);
-  return `<article class="feed-card"><div class="card-top"><span class="type ${x.type}">${svg(x.type === "Seminar" ? "calendar" : x.type === "Video" ? "play" : "news")}${x.type === "Video" ? "VIDEO SUMMARY" : x.type.toUpperCase()}</span><span>·</span><span>${esc(x.topic)}</span><span class="spacer"></span><span>${esc(x.date)}</span></div><button class="card-title" data-open="${x.id}">${esc(x.title)}</button><div class="byline"><span class="mini-avatar">${esc(x.initial)}</span>${esc(x.author)}<span aria-hidden="true">·</span><span>${esc(x.read)}</span></div><p class="description">${esc(x.desc)}</p>${x.art ? `<div class="art" role="button" tabindex="0" data-open="${x.id}" aria-label="Đọc ${esc(x.title)}">${art(x.art)}<span class="play">▶ &nbsp; Khám phá nội dung</span><span class="duration">${esc(x.duration)}</span></div>` : ""}<div class="tags">${x.tags.map((t) => `<button class="tag" data-search="${esc(t)}">${esc(t)}</button>`).join("")}</div><div class="card-footer"><button class="action ${liked.includes(x.id) ? "selected" : ""}" data-like="${x.id}" aria-label="Yêu thích">${svg("heart")}${x.likes + (liked.includes(x.id) ? 1 : 0)}</button><button class="action" data-open="${x.id}">${svg("highlight")}${notes.filter((n) => n.id === x.id).length || "Ghi chú"}</button><button class="action ${s ? "selected" : ""}" data-save="${x.id}" aria-label="${s ? "Bỏ lưu" : "Lưu"} ${esc(x.title)}">${svg("bookmark")}${s ? "Đã lưu" : "Lưu"}</button><button class="read" data-open="${x.id}">Đọc tóm tắt</button></div></article>`;
+  return `<article class="feed-card"><div class="card-top"><span class="byline"><span class="mini-avatar">${esc(x.initial)}</span><span>Từ <strong>${esc(x.author)}</strong></span><span aria-hidden="true">·</span><span>${esc(x.read)}</span></span><span class="spacer"></span><span>${esc(x.date)}</span></div><button class="card-title" data-open="${x.id}">${esc(x.title)}</button><div class="card-pills"><span class="type ${x.type}">${svg(x.type === "Seminar" ? "calendar" : x.type === "Video" ? "play" : "news")}${x.type === "Video" ? "Video Summary" : x.type}</span><span class="topic-pill">${esc(x.topic)}</span></div><p class="description">${esc(x.desc)}</p>${x.art ? `<div class="art" role="button" tabindex="0" data-open="${x.id}" aria-label="Đọc ${esc(x.title)}">${art(x.art)}<span class="play">▶ &nbsp; Khám phá nội dung</span><span class="duration">${esc(x.duration)}</span></div>` : ""}<div class="tags">${x.tags.map((t) => `<button class="tag" data-search="${esc(t)}">${esc(t)}</button>`).join("")}</div><div class="card-footer"><button class="action ${liked.includes(x.id) ? "selected" : ""}" data-like="${x.id}" aria-label="Yêu thích">${svg("heart")}${x.likes + (liked.includes(x.id) ? 1 : 0)}</button><button class="action" data-open="${x.id}">${svg("highlight")}${notes.filter((n) => n.id === x.id).length || "Ghi chú"}</button><button class="action ${s ? "selected" : ""}" data-save="${x.id}" aria-label="${s ? "Bỏ lưu" : "Lưu"} ${esc(x.title)}">${svg("bookmark")}${s ? "Đã lưu" : "Lưu"}</button><button class="read" data-open="${x.id}">Đọc tóm tắt</button></div></article>`;
 }
 function rightRail() {
   return `<div class="edition"><span>YOUR DAILY DOSE OF CURIOSITY</span><span>✧</span></div><section class="feature"><div class="eyebrow">BỘ SƯU TẬP NỔI BẬT</div><h3>Hiểu AI.<br>Hiểu tương lai.</h3><p>Những ý tưởng lớn, từ nền tảng đến biên giới mới của trí tuệ nhân tạo.</p><button data-topic="${topics[0]}">Khám phá bộ sưu tập</button></section><section class="rail-section"><div class="rail-head"><h3>Seminar sắp tới</h3><button data-view="events">Xem lịch</button></div>${eventsMarkup(true)}</section><section class="rail-section"><div class="rail-head"><h3>Đi theo sự tò mò</h3></div>${topics.map((t, i) => `<button class="topic-row" data-topic="${t}" style="width:100%"><span class="dot" style="background:${["#b2c7a4", "#d3b88d", "#b8a5cf", "#a4b9ce"][i]}"></span><span>${t}</span><small>${items.filter((x) => x.topic === t && feedVisible(x)).length}</small></button>`).join("")}</section><div class="newsletter"><h3>Ít nhiễu hơn. Nhiều góc nhìn hơn.</h3><p>Mỗi ý tưởng đáng nhớ đều xứng đáng có một chỗ trong thư viện của bạn.</p><button data-view="saved">Mở thư viện của tôi</button></div><div class="rail-foot">AIQS Project · A space for curious minds.<br>Bản mẫu tương tác · Nội dung minh họa</div>`;
@@ -529,14 +529,18 @@ function bind() {
       input.setSelectionRange(pos, pos);
     }, 160);
   };
-  document.querySelector("#theme").onclick = () => {
+  // Desktop shows the theme switch in the sidebar, small screens in the icon rail.
+  document.querySelectorAll("#theme, .js-theme").forEach((button) => {
+    button.onclick = toggleTheme;
+  });
+  function toggleTheme() {
     document.body.classList.toggle("light");
     persist(
       "theme",
       document.body.classList.contains("light") ? "light" : "dark",
     );
     render();
-  };
+  }
   document.querySelector("#add").onclick = () => showWriter();
   document.querySelector("#copy")?.addEventListener("click", async () => {
     try {
